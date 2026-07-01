@@ -1297,27 +1297,40 @@
     const submitBtn = document.getElementById('submitBtn');
     let base64Data = null;
     let currentFile = null;
+    let currentMimeType = 'image/jpeg';
+    let compressedImageInfo = null;
 
     document.getElementById('cameraBtn').addEventListener('click', () => cameraInput.click());
     document.getElementById('galleryBtn').addEventListener('click', () => fileInput.click());
     cameraInput.addEventListener('change', handleFileChange); 
     fileInput.addEventListener('change', handleFileChange);
 
-    function handleFileChange(e) {
+    async function handleFileChange(e) {
       if (e.target.files.length > 0) {
         currentFile = e.target.files[0];
         if (!currentFile.type.startsWith('image/')) return showToast('画像ファイルを選択してください', true);
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          base64Data = e.target.result; 
+        try {
+          showToast('画像を読み込み中です...');
+          const processed = await compressImageFileForAi(currentFile);
+          base64Data = processed.dataUrl;
+          currentMimeType = processed.mimeType;
+          compressedImageInfo = processed;
           imagePreview.src = base64Data;
           dropZone.classList.add('hidden'); 
           resultArea.classList.add('hidden'); 
           previewArea.classList.remove('hidden');
           document.getElementById('dateInput').valueAsDate = new Date();
-        };
-        reader.readAsDataURL(currentFile);
+
+          const savedPercent = processed.originalBytes > 0
+            ? Math.max(0, Math.round((1 - processed.compressedBytes / processed.originalBytes) * 100))
+            : 0;
+          showToast(`画像をAI読取用に最適化しました（${formatBytes(processed.originalBytes)} → ${formatBytes(processed.compressedBytes)} / 約${savedPercent}%削減）`);
+        } catch (error) {
+          console.error(error);
+          showToast(error.message || '画像の圧縮に失敗しました。別の画像でお試しください。', true);
+          e.target.value = '';
+        }
       }
     }
 
@@ -1327,6 +1340,8 @@
     function resetScanForm() {
       base64Data = null; 
       currentFile = null; 
+      currentMimeType = 'image/jpeg';
+      compressedImageInfo = null;
       fileInput.value = ''; 
       cameraInput.value = '';
       previewArea.classList.add('hidden'); 
@@ -1339,6 +1354,108 @@
     // -------------------------------------------------------------
     // 最先端AI (Gemini API) 直通 OCR スキャン
     // -------------------------------------------------------------
+    function formatBytes(bytes) {
+      if (!bytes || bytes <= 0) return '0KB';
+      if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + 'MB';
+      return Math.max(1, Math.round(bytes / 1024)) + 'KB';
+    }
+
+    function estimateDataUrlBytes(dataUrl) {
+      const base64 = String(dataUrl).split(',')[1] || '';
+      return Math.floor(base64.length * 3 / 4);
+    }
+
+    function loadFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = () => reject(new Error('画像ファイルの読み込みに失敗しました。'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImageElement(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('画像を読み込めませんでした。HEIC形式の場合はJPG/PNGに変換してから試してください。'));
+        img.src = dataUrl;
+      });
+    }
+
+    function drawImageToJpegDataUrl(img, maxSide, quality) {
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      width = Math.max(1, Math.round(width * scale));
+      height = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+      return { dataUrl: canvas.toDataURL('image/jpeg', quality), width, height };
+    }
+
+    async function compressImageFileForAi(file) {
+      const originalDataUrl = await loadFileAsDataUrl(file);
+      const img = await loadImageElement(originalDataUrl);
+
+      // 領収書の文字が読める範囲を残すため、強すぎる圧縮は避ける。
+      // 1800px/0.88を基本に、大きすぎる時だけ段階的に軽くする。
+      const plans = [
+        { maxSide: 1800, quality: 0.88 },
+        { maxSide: 1700, quality: 0.84 },
+        { maxSide: 1600, quality: 0.82 },
+        { maxSide: 1450, quality: 0.78 }
+      ];
+
+      const targetBytes = 1200 * 1024;
+      let best = null;
+      for (const plan of plans) {
+        const rendered = drawImageToJpegDataUrl(img, plan.maxSide, plan.quality);
+        const bytes = estimateDataUrlBytes(rendered.dataUrl);
+        best = {
+          dataUrl: rendered.dataUrl,
+          mimeType: 'image/jpeg',
+          originalBytes: file.size || estimateDataUrlBytes(originalDataUrl),
+          compressedBytes: bytes,
+          width: rendered.width,
+          height: rendered.height,
+          maxSide: plan.maxSide,
+          quality: plan.quality
+        };
+        if (bytes <= targetBytes) break;
+      }
+      return best;
+    }
+
+    async function prepareImageForGemini(dataUrl, fallbackMimeType) {
+      if (!dataUrl) throw new Error('AIへ送る画像データがありません。');
+      // 画像は選択時点で圧縮済み。ここではbase64部分だけを渡して通信量を増やさない。
+      const base64 = String(dataUrl).split(',')[1];
+      if (!base64) throw new Error('画像データをbase64として読めませんでした。');
+      return { base64, mimeType: 'image/jpeg' };
+    }
+
+    function parseJsonFromAiText(text) {
+      if (!text) throw new Error('AIから空の返答が返りました。');
+      let cleaned = String(text).trim();
+      cleaned = cleaned.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+      try { return JSON.parse(cleaned); } catch (e) {}
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      }
+      throw new Error('AIの返答をJSONとして読めませんでした: ' + cleaned.slice(0, 120));
+    }
+
     submitBtn.addEventListener('click', () => startAiOcr(false));
 
     async function callGeminiDirect(payloadRaw) {
@@ -1347,11 +1464,12 @@
       const gasUrl = getGasUrl();
       const response = await fetch(gasUrl, {
         method: 'POST',
-        body: JSON.stringify({ action: 'call_gemini', payload: payloadRaw }),
+        body: JSON.stringify({ action: 'call_gemini', payload: payloadRaw, returnTextOnly: true }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
       });
       const result = await response.json();
       if (result.success) {
+        if (typeof result.text === 'string') return { candidates: [{ content: { parts: [{ text: result.text }] } }] };
         return result.result; 
       } else {
         throw new Error(result.error || 'GAS経由でのAI呼び出しに失敗しました');
@@ -1368,8 +1486,9 @@
       submitBtn.classList.replace('bg-indigo-600', 'bg-indigo-400');
 
       try {
-        const base64Clean = base64Data.split(',')[1];
-        const mimeType = currentFile.type;
+        const processedImage = await prepareImageForGemini(base64Data, currentMimeType || 'image/jpeg');
+        const base64Clean = processedImage.base64;
+        const mimeType = processedImage.mimeType;
 
         const selectedType = document.getElementById('typeInput').value;
         const selectedDate = document.getElementById('dateInput').value;
@@ -1393,19 +1512,7 @@
           }],
           generationConfig: {
             responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                type: { type: "STRING", description: "書類の種類。'領収書', '医療費', '書類' のいずれか" },
-                date: { type: "STRING", description: "YYYY-MM-DD 形式の日付" },
-                store: { type: "STRING", description: "店舗名、会社名、クリニック名、支払先" },
-                amount: { type: "NUMBER", description: "合計の支払金額" },
-                category: { type: "STRING", description: "最適と思われるカテゴリ： '消耗品費', '交通費', '通信費', '接待交際費', '診療・治療', '医薬品購入', 'その他'" },
-                patientName: { type: "STRING", description: "医療費の場合のみ患者氏名。一般は空文字列" },
-                items: { type: "STRING", description: "品目や詳細（20文字以内）" }
-              },
-              required: ["type", "date", "store", "amount", "category", "items"]
-            }
+            temperature: 0.1
           }
         };
 
@@ -1414,7 +1521,7 @@
         
         if (!textResult) throw new Error('AIからの解析結果を取得できませんでした。');
 
-        const parsedData = JSON.parse(textResult);
+        const parsedData = parseJsonFromAiText(textResult);
 
         if (selectedType) parsedData.type = selectedType;
         if (selectedDate) parsedData.date = selectedDate;
@@ -1467,7 +1574,8 @@
 
       } catch (error) {
         console.error(error);
-        showToast('AI解析中にエラーが発生しました。もう一度お試しください。', true);
+        const message = error && error.message ? error.message : '不明なエラー';
+        showToast('AI解析エラー: ' + message.slice(0, 110), true);
       } finally {
         submitBtn.innerHTML = originalText; 
         submitBtn.disabled = false; 
@@ -1920,6 +2028,16 @@
           let formattedAdvice = rawText.replace(/\n/g, '<br>');
           formattedAdvice = formattedAdvice.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-indigo-700">$1</span>');
           adviceContent.innerHTML = formattedAdvice;
+          try {
+            const gasUrl = getGasUrl();
+            await fetch(gasUrl, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'saveAdvice', level: detailLevel, total: currentSummaryData.total, advice: rawText }),
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+          } catch (saveError) {
+            console.warn('AIアドバイス履歴の保存に失敗しました:', saveError);
+          }
           
           if (detailLevel === 'ワンポイント') {
             document.getElementById('getAiAdviceDetailBtn').classList.remove('hidden');
