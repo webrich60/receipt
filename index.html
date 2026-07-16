@@ -164,7 +164,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4">
         <div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>安全管理・メンテナンス</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">バックアップ作成、列ズレ点検、削除データの復元ができます。</p></div>
         <button id="backupButton" class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl py-3 text-xs font-bold">現在のスプレッドシートをバックアップ</button>
-        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">列構成を点検・修復</button>
+        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">見出し・管理IDを点検</button>
         <div id="maintenanceResult" class="hidden text-xs rounded-xl p-3 bg-slate-50 text-slate-700 border border-slate-200 leading-relaxed"></div>
       </div>
 
@@ -261,17 +261,41 @@
     }, 3800);
   }
 
-  async function api(payload){
-    if(!connected()) throw new Error('GASウェブアプリURLが未設定です。設定画面で登録してください。');
-    const response = await fetch(localStorage.getItem('yuzuGasUrl'), {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(payload)
-    });
+  function normalizeGasUrl(raw){
+    const url = String(raw || '').trim().replace(/[?#].*$/, '').replace(/\/$/, '');
+    if(/\/dev$/.test(url)) throw new Error('テスト用の /dev URLではなく、末尾が /exec のウェブアプリURLを使用してください。');
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
+      throw new Error('GAS URLが正しくありません。末尾が /exec のURLをコピーしてください。');
+    }
+    return url;
+  }
+
+  async function api(payload, overrideUrl=''){
+    const savedUrl = overrideUrl || localStorage.getItem('yuzuGasUrl') || '';
+    const endpoint = normalizeGasUrl(savedUrl);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify(payload),
+        redirect:'follow',
+        cache:'no-store',
+        signal:controller.signal
+      });
+    } catch(e) {
+      const detail = e && e.name === 'AbortError' ? '接続が20秒でタイムアウトしました。' : 'GASへ接続できませんでした。';
+      throw new Error(detail + ' デプロイを「次のユーザーとして実行：自分」「アクセスできるユーザー：全員」にし、/exec URLを確認してください。');
+    } finally {
+      clearTimeout(timer);
+    }
+    if(!response.ok) throw new Error(`GAS通信エラー（HTTP ${response.status}）です。デプロイ設定を確認してください。`);
     const text = await response.text();
     let result;
     try { result = JSON.parse(text); }
-    catch(e) { throw new Error('GASから正しいJSONが返りません。最新バージョンの再デプロイを確認してください。'); }
+    catch(e) { throw new Error('GASからJSONが返りません。新しいバージョンで再デプロイし、/exec URLを使用してください。'); }
     if(!result.success) throw Object.assign(new Error(result.error || '処理に失敗しました。'), { result });
     return result;
   }
@@ -639,15 +663,19 @@
   };
 
   $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
-    const url = $('gasUrl').value.trim();
-    if(!/^https:\/\/script\.google\.com\//.test(url)) return toast('正しいGASウェブアプリURLを入力してください。', true);
-    localStorage.setItem('yuzuGasUrl', url);
-    updateMode();
     try {
-      const r = await api({ action:'setup' });
+      const url = normalizeGasUrl($('gasUrl').value);
+      const r = await api({ action:'setup' }, url);
+      localStorage.setItem('yuzuGasUrl', url);
+      $('gasUrl').value = url;
+      updateMode();
       toast(`接続成功。既存データ${r.migrated || 0}件に管理IDを付与しました。`);
       loadDeleted();
-    } catch(e) { toast('URLは保存しましたが接続確認に失敗しました: ' + e.message, true); }
+    } catch(e) {
+      localStorage.removeItem('yuzuGasUrl');
+      updateMode();
+      toast('接続できないためURLは保存していません。' + e.message, true);
+    }
   });
 
   $('backupButton').onclick = () => withButton($('backupButton'), 'バックアップ中...', async () => {
@@ -658,7 +686,7 @@
   });
 
   $('repairButton').onclick = () => withButton($('repairButton'), '点検・修復中...', async () => {
-    if(!confirm('列構成を点検し、認識できる見出しを標準列へ再配置します。実行前に自動バックアップされます。続けますか？')) return;
+    if(!confirm('見出し・書式・管理IDを安全に点検します。実行前に自動バックアップされます。続けますか？')) return;
     try {
       const r = await api({ action:'repair_layout' });
       $('maintenanceResult').innerHTML = `バックアップ：${escapeHtml(r.backupName)}<br>${(r.reports || []).map(escapeHtml).join('<br>')}`;
