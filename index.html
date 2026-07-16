@@ -1,275 +1,438 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WEBRICH Story Studio Personal</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロジェクトヒアリングシート</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    :root{
-      --bg:#f7f9fc;--surface:#fff;--surface2:#f3f7fb;--text:#172033;--muted:#6b7688;
-      --line:#dbe4ef;--line2:#c5d2e2;--brand:#1559b7;--brand2:#0f3f86;--soft:#eaf2ff;
-      --gold:#c8963f;--goldsoft:#fff7e6;--danger:#b42318;--success:#198754;
-      --shadow:0 20px 55px rgba(20,42,75,.10);--shadow-sm:0 8px 26px rgba(20,42,75,.08);
-      --radius:20px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.65}
-    button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app{min-height:100vh;display:grid;grid-template-columns:270px 1fr}
-    .sidebar{background:#fff;border-right:1px solid var(--line);padding:20px 15px;position:sticky;top:0;height:100vh;overflow:auto;z-index:30}
-    .brand{display:flex;gap:12px;align-items:center;padding:8px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:15px}.mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#4b8eea);display:grid;place-items:center;color:#fff;font-weight:950;font-size:18px}
-    .brand h1{font-size:17px;line-height:1.2;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}.personal{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:999px;background:var(--goldsoft);color:#7c5317;font-weight:900;font-size:10px;border:1px solid #efd7a9}
-    .nav-title{margin:16px 10px 8px;color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.12em}.nav-btn{width:100%;border:0;background:transparent;border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:10px;color:#43516a;font-weight:800;text-align:left;margin:3px 0}.nav-btn span{width:28px;height:28px;border-radius:9px;background:var(--surface2);display:grid;place-items:center}.nav-btn.active{background:var(--soft);color:var(--brand)}
-    .side-note{margin-top:20px;padding:13px;border:1px solid var(--line);border-radius:15px;background:#fbfdff;font-size:12px;color:var(--muted)}
-    main{min-width:0}.topbar{height:74px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20}.crumb{color:var(--muted);font-size:13px;font-weight:800}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#d9e8ff,#fff3d7);display:grid;place-items:center;font-weight:900;color:var(--brand)}.user b,.user small{display:block}.user small{color:var(--muted)}
-    .mobile{display:none}.content{padding:28px;max-width:1380px;margin:0 auto 80px}.screen{display:none}.screen.active{display:block;animation:fade .18s ease-out}@keyframes fade{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
-    .head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}.head h2{font-size:29px;margin:0;letter-spacing:-.03em}.head p{margin:5px 0 0;color:var(--muted)}
-    .hero{background:linear-gradient(135deg,#fff,#eef5ff);border:1px solid #d6e6ff;border-radius:26px;padding:26px;box-shadow:var(--shadow-sm);display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-bottom:18px}.hero h2{font-size:29px;line-height:1.3;margin:0 0 7px}.hero h2 strong{color:var(--brand)}.hero p{margin:0;color:var(--muted);max-width:760px}.hero-badge{padding:15px 18px;border-radius:18px;background:#fff;border:1px solid var(--line);text-align:center}.hero-badge b{font-size:26px;color:var(--brand);display:block}.hero-badge small{color:var(--muted)}
-    .grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.split{display:grid;grid-template-columns:430px 1fr;gap:18px;align-items:start}
-    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:20px}.card h3{margin:0 0 8px;font-size:18px}.card p{margin:0;color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:10px}.stat-num{font-size:34px;font-weight:950;color:var(--brand);letter-spacing:-.05em}.stat-label{font-weight:900}.stat-sub{font-size:12px;color:var(--muted)}
-    .field{margin-bottom:14px}.field label{display:flex;justify-content:space-between;gap:10px;font-weight:850;margin-bottom:7px;color:#243047}.hint{font-size:12px;color:var(--muted);font-weight:600}.input,.select,.textarea{width:100%;border:1px solid var(--line2);border-radius:14px;padding:12px 13px;background:#fff;color:var(--text);outline:none}.textarea{min-height:112px;resize:vertical}.textarea.tall{min-height:220px}.input:focus,.select:focus,.textarea:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(21,89,183,.12)}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:14px;padding:11px 15px;min-height:44px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px}.primary{background:linear-gradient(135deg,var(--brand),#4b8eea);color:#fff;box-shadow:0 10px 24px rgba(21,89,183,.22)}.soft{background:var(--soft);color:var(--brand2);border:1px solid #cfe0fa}.ghost{background:#fff;color:var(--brand2);border:1px solid var(--line2)}.danger{background:#fff0ee;color:var(--danger);border:1px solid #ffd1ca}.gold{background:var(--goldsoft);color:#7c5317;border:1px solid #efd7a9}.btn:disabled{opacity:.55;cursor:not-allowed}.full{width:100%}
-    .chips{display:flex;gap:7px;flex-wrap:wrap}.chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#526078;font-size:12px;font-weight:850}.chip.blue{background:var(--soft);color:var(--brand);border-color:#cfe0fa}.chip.green{background:#eaf8f0;color:var(--success);border-color:#bfebd1}.chip.gold{background:var(--goldsoft);color:#7c5317;border-color:#efd7a9}
-    .output{white-space:pre-wrap;line-height:1.9;background:#fcfdff;border:1px solid var(--line);border-radius:16px;padding:18px;min-height:420px;max-height:70vh;overflow:auto}.empty{padding:35px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:17px;background:#fbfdff}.loader{display:none;align-items:center;gap:10px;color:var(--brand);font-weight:900;margin:14px 0}.loader.show{display:flex}.spin{width:20px;height:20px;border:3px solid #cfe0fa;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-    .list{display:grid;gap:12px}.item{border:1px solid var(--line);border-radius:16px;padding:15px;background:#fff}.item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.item h4{margin:0;font-size:16px}.item small{color:var(--muted)}.item .body{margin-top:9px;color:#43516a;white-space:pre-wrap;max-height:130px;overflow:hidden}.item-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.mini{padding:7px 10px;min-height:34px;border-radius:10px;font-size:12px}
-    .status-box{display:grid;gap:10px}.status-line{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.status-line:last-child{border-bottom:0}.ok{color:var(--success);font-weight:900}.ng{color:var(--danger);font-weight:900}.note{padding:13px;border-radius:15px;border:1px dashed var(--line2);background:#fbfdff;color:var(--muted);font-size:13px}.toast{position:fixed;right:18px;bottom:18px;background:#172033;color:#fff;padding:12px 15px;border-radius:14px;box-shadow:var(--shadow);z-index:100;opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}.modal{position:fixed;inset:0;background:rgba(15,32,55,.45);display:none;place-items:center;padding:20px;z-index:90}.modal.show{display:grid}.modal-card{background:#fff;width:min(920px,100%);max-height:88vh;overflow:auto;border-radius:22px;box-shadow:var(--shadow);padding:22px}.modal-body{white-space:pre-wrap;line-height:1.85}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:15px}
-    @media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.form-card{position:static!important}}
-    @media(max-width:760px){.app{display:block}.sidebar{position:fixed;left:-285px;width:270px;transition:.2s}.sidebar.open{left:0;box-shadow:var(--shadow)}.mobile{display:inline-flex}.topbar{padding:0 14px}.content{padding:18px 13px}.user>div:not(.avatar){display:none}.g4,.g3,.g2,.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.hero{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.head h2,.hero h2{font-size:24px}.btns .btn{flex:1}.output{min-height:360px}.overlay{position:fixed;inset:0;background:rgba(15,32,55,.35);z-index:25;display:none}.overlay.show{display:block}}
+    .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .hidden-step { display: none !important; }
   </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            blue: { 50: '#eff6ff', 900: '#1e3a8a' },
+            cyan: { 400: '#22d3ee', 500: '#06b6d4' }
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-<div class="overlay" id="overlay"></div>
-<div class="app">
-  <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="mark">W</div><div><h1>WEBRICH<br>Story Studio</h1><p>AI物語作成サポート</p><span class="personal">PERSONAL</span></div></div>
-    <div class="nav-title">MAIN</div>
-    <button class="nav-btn active" data-screen="dashboard"><span>⌂</span>ダッシュボード</button>
-    <button class="nav-btn" data-screen="create"><span>✦</span>記事を作る</button>
-    <button class="nav-btn" data-screen="materials"><span>◇</span>人生素材</button>
-    <button class="nav-btn" data-screen="articles"><span>稿</span>記事管理</button>
-    <div class="nav-title">SYSTEM</div>
-    <button class="nav-btn" data-screen="settings"><span>⚙</span>設定・接続</button>
-    <div class="side-note">ログインなし・自分専用。APIキーは画面に保存せず、GASのスクリプトプロパティで管理します。</div>
-  </aside>
+<body class="bg-white text-blue-900 font-sans antialiased pb-16 selection:bg-blue-900 selection:text-white">
 
-  <main>
-    <header class="topbar">
-      <div style="display:flex;align-items:center;gap:10px"><button class="btn ghost mobile" id="menuBtn">☰</button><div class="crumb" id="crumb">ダッシュボード / 今日の作業</div></div>
-      <div class="user"><div class="avatar">相</div><div><b>相棒</b><small id="topModel">接続確認中</small></div></div>
-    </header>
-
-    <div class="content">
-      <section class="screen active" id="dashboard">
-        <div class="hero"><div><div class="chips"><span class="chip blue">月10万円を目指す実戦ツール</span><span class="chip green">GAS＋スプレッドシート</span></div><h2>悩みを、<strong>読まれる価値</strong>に変える。</h2><p>人生素材を整理し、神話物語と新PASONAで、無料note・有料note・事業ストーリー・LP・SNSへ展開します。</p><div class="btns"><button class="btn primary" data-go="create">新しい記事を作る</button><button class="btn soft" data-go="materials">人生素材を登録</button></div></div><div class="hero-badge"><b>PERSONAL</b><small>ログイン不要</small></div></div>
-        <div class="grid g4">
-          <div class="card stat"><div><div class="stat-label">人生素材</div><div class="stat-sub">記事の元になる体験</div></div><div class="stat-num" id="statMaterials">0</div></div>
-          <div class="card stat"><div><div class="stat-label">保存記事</div><div class="stat-sub">下書き・構成案</div></div><div class="stat-num" id="statArticles">0</div></div>
-          <div class="card stat"><div><div class="stat-label">今月の生成</div><div class="stat-sub">継続を見える化</div></div><div class="stat-num" id="statMonth">0</div></div>
-          <div class="card stat"><div><div class="stat-label">月間目標</div><div class="stat-sub">まずは現実的な一歩</div></div><div class="stat-num">10万</div></div>
-        </div>
-        <div class="grid g3" style="margin-top:18px">
-          <div class="card"><h3>1. 素材をためる</h3><p>病気、仕事、家族、挑戦、失敗。短文でも保存し、記事の燃料にします。</p></div>
-          <div class="card"><h3>2. 構成を設計</h3><p>いきなり長文を生成せず、読者心理・見出し・商品導線を先に確認します。</p></div>
-          <div class="card"><h3>3. 公開して改善</h3><p>無料noteから有料note、商品、相談へ。数字を見ながら現実的に磨きます。</p></div>
-        </div>
-      </section>
-
-      <section class="screen" id="create">
-        <div class="head"><div><h2>記事を作る</h2><p>構成案→本文→保存の順で、安全に仕上げます。</p></div><div class="chips"><span class="chip blue">神話物語</span><span class="chip gold">新PASONA</span></div></div>
-        <div class="split">
-          <div class="card form-card" style="position:sticky;top:95px">
-            <div class="form-grid">
-              <div class="field"><label>文章タイプ</label><select class="select" id="type"><option>無料note</option><option>有料note</option><option>事業ストーリー</option><option>LP文章</option><option>SNS投稿</option></select></div>
-              <div class="field"><label>構成</label><select class="select" id="framework"><option>神話物語＋新PASONA</option><option>神話物語中心</option><option>新PASONA中心</option><option>実用記事型</option></select></div>
-              <div class="field wide"><label>仮タイトル <span class="hint">未定でも可</span></label><input class="input" id="title" placeholder="例：61歳、目の病気をきっかけにAIへ挑戦した理由"></div>
-              <div class="field wide"><label>テーマ</label><textarea class="textarea" id="theme" placeholder="この記事で扱うテーマを入力"></textarea></div>
-              <div class="field wide"><label>想定読者</label><textarea class="textarea" id="target" placeholder="誰に読んでほしいか"></textarea></div>
-              <div class="field wide"><label>読者の悩み</label><textarea class="textarea" id="pain" placeholder="読者が今困っていること、不安、望み"></textarea></div>
-              <div class="field wide"><label>自分の体験・素材</label><textarea class="textarea tall" id="experience" placeholder="出来事、場面、感情、数字など。人生素材から貼り付けられます。"></textarea><div class="btns"><button class="btn ghost mini" id="loadMaterialBtn">人生素材から選ぶ</button></div></div>
-              <div class="field wide"><label>伝えたい結論</label><textarea class="textarea" id="message" placeholder="読者に持ち帰ってほしい気づき"></textarea></div>
-              <div class="field wide"><label>商品・サービス</label><textarea class="textarea" id="product" placeholder="紹介しない場合は空欄でOK"></textarea></div>
-              <div class="field"><label>文体</label><select class="select" id="tone"><option>前向きで読みやすい</option><option>映画のように臨場感</option><option>静かで深い</option><option>小説風エッセイ</option><option>ビジネス寄り</option></select></div>
-              <div class="field"><label>文字数</label><select class="select" id="length"><option>1500〜2500文字</option><option selected>2500〜3500文字</option><option>4000〜6000文字</option><option>7000文字以上</option></select></div>
-              <div class="field wide"><label>CTA</label><textarea class="textarea" id="cta" placeholder="次回記事、有料note、商品、相談などへの自然な案内"></textarea></div>
-              <div class="field wide"><label>既存文章 <span class="hint">リライト時のみ</span></label><textarea class="textarea tall" id="existingText" placeholder="既存の下書きを貼り付け"></textarea></div>
-            </div>
-            <div class="btns"><button class="btn soft" id="outlineBtn">構成案を生成</button><button class="btn primary" id="fullBtn">本文を生成</button><button class="btn ghost" id="rewriteBtn">リライト</button><button class="btn gold" id="snsBtn">SNSへ展開</button></div>
-          </div>
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3>AI出力</h3><p id="resultMeta">生成前です。</p></div><div class="btns" style="margin:0"><button class="btn ghost mini" id="copyBtn" disabled>コピー</button><button class="btn soft mini" id="saveArticleBtn" disabled>記事管理へ保存</button><button class="btn danger mini" id="clearBtn">クリア</button></div></div>
-            <div class="loader" id="loader"><div class="spin"></div><span>文章を設計しています。入力内容が多いほど少し時間がかかります。</span></div>
-            <div class="output" id="result"><div class="empty">左側に素材を入力し、「構成案を生成」または「本文を生成」を押してください。</div></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="screen" id="materials">
-        <div class="head"><div><h2>人生素材</h2><p>単語や短文でも構いません。後から記事の場面に育てます。</p></div><button class="btn primary" id="newMaterialBtn">＋ 素材を追加</button></div>
-        <div class="grid g2">
-          <div class="card" id="materialFormCard">
-            <h3>素材を登録</h3>
-            <div class="form-grid">
-              <div class="field wide"><label>タイトル</label><input class="input" id="matTitle" placeholder="例：昨年7月、左目が突然見えなくなった"></div>
-              <div class="field"><label>時期・年齢</label><input class="input" id="matPeriod" placeholder="61歳、2025年7月など"></div>
-              <div class="field"><label>カテゴリ</label><select class="select" id="matCategory"><option>病気・再出発</option><option>仕事・実績</option><option>家族</option><option>借金・生活再建</option><option>AIへの挑戦</option><option>失敗・学び</option><option>その他</option></select></div>
-              <div class="field wide"><label>出来事・詳細</label><textarea class="textarea tall" id="matDetail" placeholder="何が起きたか。見えたもの、聞こえた言葉、行動など"></textarea></div>
-              <div class="field wide"><label>その時の感情</label><textarea class="textarea" id="matEmotion" placeholder="不安、悔しさ、安心、決意など"></textarea></div>
-              <div class="field wide"><label>今振り返って分かる意味</label><textarea class="textarea" id="matLesson" placeholder="この経験が今につながっている点"></textarea></div>
-              <div class="field wide"><label>公開範囲</label><select class="select" id="matPrivacy"><option>ぼかして使う</option><option>noteでも公開</option><option>自分用メモ</option></select></div>
-            </div>
-            <button class="btn primary full" id="saveMaterialBtn">人生素材を保存</button>
-          </div>
-          <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h3>保存済み素材</h3><p>記事作成画面へ送れます。</p></div><button class="btn ghost mini" id="refreshMaterials">更新</button></div><div class="list" id="materialsList" style="margin-top:15px"><div class="empty">読み込み中です。</div></div></div>
-        </div>
-      </section>
-
-      <section class="screen" id="articles">
-        <div class="head"><div><h2>記事管理</h2><p>AI生成した構成案・本文をスプレッドシートに保存します。</p></div><button class="btn ghost" id="refreshArticles">更新</button></div>
-        <div class="card"><div class="list" id="articlesList"><div class="empty">読み込み中です。</div></div></div>
-      </section>
-
-      <section class="screen" id="settings">
-        <div class="head"><div><h2>設定・接続</h2><p>APIキーはHTMLや画面に置かず、GAS側だけで管理します。</p></div></div>
-        <div class="grid g2">
-          <div class="card"><h3>接続状態</h3><div class="status-box"><div class="status-line"><span>OpenAI APIキー</span><span id="apiStatus">確認中</span></div><div class="status-line"><span>スプレッドシート</span><span id="sheetStatus">確認中</span></div><div class="status-line"><span>アプリ版</span><b id="versionStatus">-</b></div></div><div class="btns"><a class="btn soft" id="sheetLink" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:none">スプレッドシートを開く</a><button class="btn ghost" id="refreshStatus">再確認</button></div></div>
-          <div class="card"><h3>使用モデル</h3><div class="field"><label>OpenAIモデルID</label><input class="input" id="modelInput" placeholder="gpt-5.6-luna"></div><button class="btn primary" id="saveModelBtn">モデル設定を保存</button><div class="note" style="margin-top:14px">低コスト優先の初期値です。品質重視へ変える場合も、画面からモデルIDだけ変更できます。</div></div>
-          <div class="card"><h3>初回設定</h3><p>Apps Scriptエディタで <b>setupProject()</b> を1回実行し、権限を承認します。</p><div class="note" style="margin-top:12px">スクリプトプロパティ：<br>OPENAI_API_KEY = OpenAIのAPIキー<br>OPENAI_MODEL = gpt-5.6-luna<br>SPREADSHEET_ID = 自動設定</div></div>
-          <div class="card"><h3>Personal版の安全方針</h3><p>ログインなしで公開範囲を「自分のみ」にする前提です。ウェブアプリのアクセス権は必ず自分だけにしてください。</p><div class="chips" style="margin-top:14px"><span class="chip green">APIキー非表示</span><span class="chip blue">サーバー側送信</span><span class="chip gold">公開前に本人確認</span></div></div>
-        </div>
-      </section>
+  <header class="max-w-4xl mx-auto px-4 pt-16 pb-8 text-center">
+    <div class="inline-flex items-center gap-2 bg-blue-900 text-white text-xs px-5 py-2 mb-6 font-black uppercase border-2 border-blue-900 shadow-[4px_4px_0_0_#1e3a8a]">
+      <i data-lucide="sparkles" class="w-4 h-4"></i> Requirements System
     </div>
+    <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight">プロジェクト<br/>ヒアリングシート</h1>
+    <p class="font-bold text-sm max-w-2xl mx-auto border-t-4 border-blue-900 pt-6 mt-4">
+      ご依頼内容をお伺いし、最適な要件定義（仕様ドラフト）を構築・自動見積します。<br/>分かる範囲で構いませんので、リラックスしてご入力ください。
+    </p>
+  </header>
+
+  <div class="max-w-4xl mx-auto px-4 mb-10">
+    <div class="bg-white border-4 border-blue-900 p-5 shadow-[8px_8px_0_0_#1e3a8a] flex flex-col md:flex-row items-center gap-4">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="bg-blue-900 text-white text-xs font-black px-3 py-1.5 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Progress</div>
+        <div class="text-sm font-black">全 <span id="total-count"></span> 項目中 <span id="progress-count" class="text-2xl text-cyan-500 mx-1">0</span> 完了</div>
+      </div>
+      <div class="w-full flex-1 bg-blue-50 h-5 border-2 border-blue-900 relative">
+        <div id="progress-bar" class="bg-cyan-400 h-full border-r-2 border-blue-900 transition-all duration-500" style="width: 0%"></div>
+      </div>
+      <span id="progress-percent" class="text-xl font-black">0%</span>
+    </div>
+  </div>
+
+  <main class="max-w-4xl mx-auto px-4">
+    
+    <div id="step-form" class="grid lg:grid-cols-12 gap-8 items-start">
+      <div class="lg:col-span-4 space-y-6">
+        <div class="bg-white border-4 border-blue-900 p-5 shadow-[6px_6px_0_0_#1e3a8a]">
+          <h3 class="text-sm font-black uppercase border-b-2 border-blue-900 pb-2 mb-4">表示スタイル</h3>
+          <div class="grid gap-3">
+            <button onclick="setViewMode('step')" id="btn-mode-step" class="flex justify-center gap-2 py-3 border-2 border-blue-900 bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4] font-black text-sm transition-all"><i data-lucide="layers" class="w-4 h-4"></i> 1問ずつ回答</button>
+            <button onclick="setViewMode('all')" id="btn-mode-all" class="flex justify-center gap-2 py-3 border-2 border-blue-900 bg-white hover:shadow-[4px_4px_0_0_#1e3a8a] font-black text-sm transition-all"><i data-lucide="layout-grid" class="w-4 h-4"></i> 一括表示</button>
+          </div>
+        </div>
+        
+        <div class="bg-white border-4 border-blue-900 p-5 shadow-[6px_6px_0_0_#1e3a8a] hidden lg:block">
+          <h3 class="text-sm font-black uppercase border-b-2 border-blue-900 pb-2 mb-4">ヒアリング項目</h3>
+          <div id="nav-list" class="space-y-2"></div>
+        </div>
+        
+        <button onclick="resetData()" class="w-full bg-white border-4 border-blue-900 font-black py-4 flex justify-center gap-2 shadow-[6px_6px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> 入力をリセット</button>
+      </div>
+
+      <div class="lg:col-span-8">
+        <div id="view-step" class="bg-white border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] animate-fade-in">
+          <div class="bg-blue-900 text-white p-6 md:p-8 flex items-start gap-4 border-b-4 border-blue-900">
+            <div id="step-icon-container" class="bg-white p-3 border-2 border-blue-900 text-blue-900 shadow-[4px_4px_0_0_#06b6d4]"></div>
+            <div>
+              <span id="step-counter" class="text-cyan-400 text-sm font-black block mb-2 tracking-widest uppercase"></span>
+              <h2 id="step-title" class="text-2xl font-black leading-tight"></h2>
+            </div>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <label id="step-question" class="block text-lg font-black border-l-8 border-blue-900 pl-4 leading-relaxed"></label>
+            <div id="step-suggestions" class="space-y-3"></div>
+            <div class="relative mt-4">
+              <textarea id="step-textarea" oninput="handleInput(this.value)" class="w-full p-5 bg-blue-50 border-4 border-blue-900 font-bold focus:outline-none focus:shadow-[6px_6px_0_0_#06b6d4] transition-all min-h-[200px] text-base leading-relaxed" placeholder=""></textarea>
+              <div id="step-char-count" class="absolute bottom-4 right-4 text-xs bg-white px-2 py-1 border-2 border-blue-900 font-black"></div>
+            </div>
+            <div class="flex justify-between pt-8 mt-8 border-t-4 border-blue-900">
+              <button id="btn-prev" onclick="prevStep()" class="flex gap-2 px-6 py-4 font-black border-4 bg-white border-blue-900 shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="chevron-left" class="w-5 h-5"></i> BACK</button>
+              <button id="btn-next" onclick="nextStep()" class="flex gap-2 px-8 py-4 font-black border-4 border-blue-900 bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">NEXT <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
+              <button id="btn-to-preview" onclick="changeStep('preview')" class="hidden-step flex gap-2 px-8 py-4 font-black border-4 border-blue-900 bg-cyan-400 text-blue-900 shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">確認画面へ <i data-lucide="check-circle" class="w-5 h-5"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-all" class="hidden-step space-y-8 animate-fade-in">
+          <div id="all-questions-container"></div>
+          <div class="text-center pt-6">
+            <button onclick="changeStep('preview')" class="bg-cyan-400 font-black py-5 px-12 border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex mx-auto gap-2 text-lg uppercase tracking-widest">回答内容を確認する <i data-lucide="check-circle" class="w-6 h-6"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="step-preview" class="hidden-step bg-white border-4 border-blue-900 shadow-[12px_12px_0_0_#1e3a8a] max-w-4xl mx-auto animate-fade-in">
+      <div class="bg-blue-900 text-white p-6 md:p-8 flex flex-col md:flex-row justify-between md:items-center gap-4 border-b-4 border-blue-900">
+        <h2 class="text-2xl font-black flex items-center gap-3"><i data-lucide="check-circle" class="w-8 h-8 text-cyan-400"></i> 回答内容の確認</h2>
+        <button onclick="changeStep('form')" class="bg-white text-blue-900 border-2 border-blue-900 px-6 py-3 font-black shadow-[4px_4px_0_0_#06b6d4] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all text-sm">編集に戻る</button>
+      </div>
+      <div class="p-6 md:p-10 space-y-6">
+        <div id="preview-list" class="space-y-6 max-h-[500px] overflow-y-auto pr-4"></div>
+        <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t-4 border-blue-900">
+          <button onclick="copyAnswers()" id="btn-copy-answers" class="flex-1 bg-white font-black py-5 border-4 border-blue-900 shadow-[4px_4px_0_0_#1e3a8a] flex justify-center items-center gap-2 text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="copy" class="w-5 h-5"></i> 手元に控えをコピー</button>
+          <button onclick="submitData()" class="flex-1 bg-cyan-400 text-blue-900 font-black py-5 border-4 border-blue-900 shadow-[6px_6px_0_0_#1e3a8a] flex justify-center items-center gap-2 text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all uppercase tracking-widest"><i data-lucide="send" class="w-5 h-5"></i> 担当者へ送信する</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="step-status" class="hidden-step bg-white border-4 border-blue-900 shadow-[12px_12px_0_0_#1e3a8a] p-12 md:p-16 text-center max-w-2xl mx-auto animate-fade-in mt-10">
+      <div id="status-icon" class="w-24 h-24 border-4 border-blue-900 flex items-center justify-center mx-auto mb-8"></div>
+      <h2 id="status-heading" class="text-3xl font-black mb-4 uppercase tracking-widest"></h2>
+      <p id="status-message" class="font-bold text-base leading-relaxed mb-10 pb-6 border-b-2 border-gray-200"></p>
+      <button id="status-btn" onclick="resetToHome()" class="bg-cyan-400 font-black py-4 px-12 border-4 border-blue-900 shadow-[6px_6px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all uppercase tracking-widest">戻る</button>
+    </div>
+
   </main>
-</div>
 
-<div class="toast" id="toast"></div>
-<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">内容</h3><button class="btn ghost mini" id="modalClose">閉じる</button></div><div class="modal-body" id="modalBody"></div></div></div>
+  <script>
+    // =========================================================
+    // ⚙️ バックエンド通信設定
+    // =========================================================
+    const CONFIG = {
+      // 接続するGASウェブアプリURL（秘密情報やメールアドレスはすべてGAS側の金庫で安全に管理されています）
+      GAS_URL: "https://script.google.com/macros/s/AKfycbztnrbX_F30l1C5ZCjWK5Q3IWcIpoLgwGRsdlCUaBeDVn-Lo_GQYSMLIkYw35YrV41f/exec"
+    };
+    // =========================================================
 
-<script>
-(function(){
-  'use strict';
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-  const state = { materials: [], articles: [], result: '', lastPayload: null, lastModel: '' };
-  const isGas = typeof google !== 'undefined' && google.script && google.script.run;
+    // データ定義（純粋なヒアリング項目のみ）
+    const questions = [
+      { id: 'desired_tool', category: '希望するツール・アプリ', icon: 'lightbulb', text: 'どのようなツールやアプリを作成したいですか？', placeholder: '例：営業スタッフ向けの経費精算アプリなど', suggestions: ['社内向け顧客管理(CRM)Webシステム', '営業スタッフ向けの経費精算スマートフォンアプリ', '自動データ収集・集計を行うスクレイピングツール'] },
+      { id: 'purpose', category: '利用目的・解決したい課題', icon: 'target', text: 'そのツールを作る目的は何ですか？どのような課題を解決したいですか？', placeholder: '例：毎月の経費入力作業が手間で自動化したい。', suggestions: ['手作業による転記作業・ヒューマンエラーを削減したい', '外出先からリアルタイムで情報を入力・共有できるようにしたい', '紙やExcelでの管理から脱却したい'] },
+      { id: 'target', category: '想定する使用者', icon: 'users', text: '主に誰がこのツールを使いますか？', placeholder: '例：自社の営業部員', suggestions: ['自社の営業・現場スタッフ', '社内の管理部門・バックオフィス担当者', '一般の消費者・エンドユーザー'] },
+      { id: 'core_features', category: '機能要件 (Must)', icon: 'settings', text: '「これだけは絶対に外せない」というコア機能は何ですか？', placeholder: '例：写真アップロード機能、承認フロー', suggestions: ['Googleログインなど、安全なユーザー認証', 'CSV / Excelファイルのインポート・エクスポート機能', 'カメラを使った画像アップロード機能'] },
+      { id: 'nice_to_have', category: '機能要件 (Want)', icon: 'check-circle', text: '「できれば欲しい」という追加機能はありますか？', placeholder: '例：Slackへの通知', suggestions: ['Slack / LINE 等への自動通知連携', 'データの自動集計グラフ表示機能', '多言語対応'] },
+      { id: 'environment', category: '利用環境', icon: 'monitor', text: 'どのデバイス、環境で利用しますか？', placeholder: '例：iPhoneとAndroidアプリ。', suggestions: ['マルチデバイス対応のWebアプリ', 'スマートフォン専用アプリ（iOS / Android）', 'Googleスプレッドシート ＋ GAS'] },
+      { id: 'schedule', category: '予算・納期', icon: 'calendar', text: '希望する予算感と、いつまでに必要か教えてください。', placeholder: '例：300万円以内、10月末まで', suggestions: ['開発予算：100万〜200万円程度 / 納期：3ヶ月以内', '最小限を低予算（〜50万円）＆短期間（1ヶ月）で作りたい', '時期・予算は要相談'] }
+    ];
 
-  function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
-  function escapeHtml(value){ return String(value||'').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-  function call(name, ...args){
-    return new Promise((resolve,reject)=>{
-      if(!isGas){ reject(new Error('この画面はGASウェブアプリとして開いてください。')); return; }
-      google.script.run.withSuccessHandler(resolve).withFailureHandler(err=>reject(new Error(err && err.message ? err.message : String(err))))[name](...args);
+    // 状態管理
+    let state = {
+      answers: JSON.parse(localStorage.getItem('hearing_answers') || '{}'),
+      activeIdx: 0,
+      mode: 'step',
+      step: 'form'
+    };
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('total-count').innerText = questions.length;
+      renderNav();
+      renderStep();
+      renderAll();
+      updateProgress();
+      lucide.createIcons();
     });
-  }
 
-  function showScreen(name){
-    $$('.screen').forEach(el=>el.classList.toggle('active',el.id===name));
-    $$('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.screen===name));
-    const labels={dashboard:'ダッシュボード / 今日の作業',create:'記事を作る / AI生成',materials:'人生素材 / 体験を保存',articles:'記事管理 / 下書き一覧',settings:'設定・接続 / Personal'};
-    $('#crumb').textContent=labels[name]||name;
-    $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show');
-    if(name==='materials') loadMaterials();
-    if(name==='articles') loadArticles();
-    if(name==='dashboard') loadDashboard();
-    if(name==='settings') loadStatus();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
+    // 状態更新＆ローカルストレージ保存
+    function setAnswer(id, val) {
+      state.answers[id] = val;
+      localStorage.setItem('hearing_answers', JSON.stringify(state.answers));
+      updateProgress();
+      renderNav();
+      
+      if (state.mode === 'step') {
+        document.getElementById('step-textarea').value = val;
+        document.getElementById('step-char-count').innerText = `文字数: ${val.length}`;
+      } else {
+        document.getElementById(`textarea-${id}`).value = val;
+        document.getElementById(`char-count-${id}`).innerText = `文字数: ${val.length}`;
+      }
+    }
 
-  $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showScreen(btn.dataset.screen)));
-  $$('[data-go]').forEach(btn=>btn.addEventListener('click',()=>showScreen(btn.dataset.go)));
-  $('#menuBtn').addEventListener('click',()=>{ $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('show'); });
-  $('#overlay').addEventListener('click',()=>{ $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); });
+    function handleInput(val) { setAnswer(questions[state.activeIdx].id, val); }
+    function handleAllInput(id, val) { setAnswer(id, val); }
+    
+    function insertText(text) {
+      const id = questions[state.activeIdx].id;
+      const current = state.answers[id] || '';
+      setAnswer(id, current ? current + '\n' + text : text);
+    }
+    
+    function insertTextAll(id, text) {
+      const current = state.answers[id] || '';
+      setAnswer(id, current ? current + '\n' + text : text);
+    }
 
-  async function loadStatus(){
-    try{
-      const s=await call('getAppStatus');
-      $('#apiStatus').textContent=s.apiKeyConfigured?'設定済み':'未設定'; $('#apiStatus').className=s.apiKeyConfigured?'ok':'ng';
-      $('#sheetStatus').textContent=s.sheetReady?'接続済み':'未設定'; $('#sheetStatus').className=s.sheetReady?'ok':'ng';
-      $('#versionStatus').textContent='v'+s.version; $('#modelInput').value=s.model||''; $('#topModel').textContent=s.model||'モデル未設定';
-      if(s.spreadsheetUrl){ $('#sheetLink').href=s.spreadsheetUrl; $('#sheetLink').style.display='inline-flex'; }
-    }catch(e){ $('#apiStatus').textContent='確認失敗'; $('#apiStatus').className='ng'; $('#sheetStatus').textContent='確認失敗'; $('#sheetStatus').className='ng'; toast(e.message); }
-  }
+    // 画面遷移
+    function changeStep(newStep) {
+      state.step = newStep;
+      document.getElementById('step-form').classList.add('hidden-step');
+      document.getElementById('step-preview').classList.add('hidden-step');
+      document.getElementById('step-status').classList.add('hidden-step');
 
-  async function loadDashboard(){
-    try{ const d=await call('getDashboardData'); $('#statMaterials').textContent=d.materials; $('#statArticles').textContent=d.articles; $('#statMonth').textContent=d.thisMonth; }
-    catch(e){ console.warn(e); }
-  }
+      if (newStep === 'form') {
+        document.getElementById('step-form').classList.remove('hidden-step');
+        renderNav();
+      } else if (newStep === 'preview') {
+        renderPreview();
+        document.getElementById('step-preview').classList.remove('hidden-step');
+      } else {
+        document.getElementById('step-status').classList.remove('hidden-step');
+        renderStatus(newStep);
+      }
+    }
 
-  function payload(action){
-    return {action,type:$('#type').value,framework:$('#framework').value,title:$('#title').value,theme:$('#theme').value,target:$('#target').value,pain:$('#pain').value,experience:$('#experience').value,message:$('#message').value,product:$('#product').value,tone:$('#tone').value,length:$('#length').value,cta:$('#cta').value,existingText:$('#existingText').value,privacy:'個人情報は必要に応じてぼかす'};
-  }
+    function setViewMode(mode) {
+      state.mode = mode;
+      document.getElementById('btn-mode-step').className = `flex justify-center gap-2 py-3 border-2 border-blue-900 font-black text-sm transition-all ${mode === 'step' ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:shadow-[4px_4px_0_0_#1e3a8a]'}`;
+      document.getElementById('btn-mode-all').className = `flex justify-center gap-2 py-3 border-2 border-blue-900 font-black text-sm transition-all ${mode === 'all' ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:shadow-[4px_4px_0_0_#1e3a8a]'}`;
+      
+      if(mode === 'step') {
+        document.getElementById('view-step').classList.remove('hidden-step');
+        document.getElementById('view-all').classList.add('hidden-step');
+        renderStep();
+      } else {
+        document.getElementById('view-step').classList.add('hidden-step');
+        document.getElementById('view-all').classList.remove('hidden-step');
+      }
+      renderNav();
+    }
 
-  async function generate(action){
-    const data=payload(action);
-    if(!data.theme.trim()){toast('テーマを入力してください。');$('#theme').focus();return;}
-    setLoading(true); state.lastPayload=data;
-    try{
-      const res=await call('generateContent',data); state.result=res.text; state.lastModel=res.model||'';
-      $('#result').textContent=res.text; $('#resultMeta').textContent=`${res.model} / ${(res.elapsedMs/1000).toFixed(1)}秒 / ${new Date(res.generatedAt).toLocaleString('ja-JP')}`;
-      $('#copyBtn').disabled=false; $('#saveArticleBtn').disabled=false; toast('生成が完了しました。');
-    }catch(e){ $('#result').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>'; toast(e.message); }
-    finally{setLoading(false);}
-  }
-  function setLoading(flag){ $('#loader').classList.toggle('show',flag); ['#outlineBtn','#fullBtn','#rewriteBtn','#snsBtn'].forEach(s=>$(s).disabled=flag); }
-  $('#outlineBtn').addEventListener('click',()=>generate('outline')); $('#fullBtn').addEventListener('click',()=>generate('full')); $('#rewriteBtn').addEventListener('click',()=>generate('rewrite')); $('#snsBtn').addEventListener('click',()=>generate('sns'));
-  $('#copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(state.result);toast('コピーしました。');}catch(e){toast('コピーできませんでした。');}});
-  $('#clearBtn').addEventListener('click',()=>{state.result='';state.lastPayload=null;$('#result').innerHTML='<div class="empty">出力をクリアしました。</div>';$('#copyBtn').disabled=true;$('#saveArticleBtn').disabled=true;$('#resultMeta').textContent='生成前です。';});
-  $('#saveArticleBtn').addEventListener('click',async()=>{
-    if(!state.result||!state.lastPayload)return;
-    try{await call('saveArticle',{...state.lastPayload,body:state.result,model:state.lastModel,status:'下書き'});toast('記事管理へ保存しました。');loadDashboard();}
-    catch(e){toast(e.message);}
-  });
+    function prevStep() { if (state.activeIdx > 0) { state.activeIdx--; renderStep(); renderNav(); } }
+    function nextStep() { if (state.activeIdx < questions.length - 1) { state.activeIdx++; renderStep(); renderNav(); } }
 
-  async function saveMaterial(){
-    const data={title:$('#matTitle').value,period:$('#matPeriod').value,category:$('#matCategory').value,detail:$('#matDetail').value,emotion:$('#matEmotion').value,lesson:$('#matLesson').value,privacy:$('#matPrivacy').value};
-    try{await call('saveMaterial',data);['#matTitle','#matPeriod','#matDetail','#matEmotion','#matLesson'].forEach(s=>$(s).value='');toast('人生素材を保存しました。');await loadMaterials();loadDashboard();}
-    catch(e){toast(e.message);}
-  }
-  $('#saveMaterialBtn').addEventListener('click',saveMaterial); $('#refreshMaterials').addEventListener('click',loadMaterials); $('#newMaterialBtn').addEventListener('click',()=>$('#matTitle').focus());
+    // レンダリング系
+    function renderStep() {
+      const q = questions[state.activeIdx];
+      const ans = state.answers[q.id] || '';
+      
+      document.getElementById('step-icon-container').innerHTML = `<i data-lucide="${q.icon}" class="w-6 h-6"></i>`;
+      document.getElementById('step-counter').innerText = `Question ${state.activeIdx + 1} / ${questions.length}`;
+      document.getElementById('step-title').innerText = q.category;
+      document.getElementById('step-question').innerText = q.text;
+      
+      let sugHtml = '<div class="flex gap-2 flex-wrap mt-2">';
+      q.suggestions.forEach(s => {
+        sugHtml += `<button onclick="insertText('${s}')" class="text-xs bg-white border-2 border-blue-900 px-3 py-2 font-bold hover:bg-blue-900 hover:text-white transition-all shadow-[2px_2px_0_0_#0f172a]">+ ${s}</button>`;
+      });
+      sugHtml += '</div>';
+      document.getElementById('step-suggestions').innerHTML = sugHtml;
+      
+      const ta = document.getElementById('step-textarea');
+      ta.placeholder = q.placeholder;
+      ta.value = ans;
+      document.getElementById('step-char-count').innerText = `文字数: ${ans.length}`;
 
-  async function loadMaterials(){
-    try{state.materials=await call('listMaterials');renderMaterials();}
-    catch(e){$('#materialsList').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>';}
-  }
-  function renderMaterials(){
-    const root=$('#materialsList'); if(!state.materials.length){root.innerHTML='<div class="empty">まだ素材がありません。</div>';return;}
-    root.innerHTML=state.materials.map(m=>`<div class="item"><div class="item-head"><div><h4>${escapeHtml(m.title)}</h4><small>${escapeHtml(m.createdAt)} / ${escapeHtml(m.category)} / ${escapeHtml(m.privacy)}</small></div></div><div class="body">${escapeHtml(m.detail)}</div><div class="item-actions"><button class="btn soft mini" data-use-material="${escapeHtml(m.id)}">記事に使う</button><button class="btn ghost mini" data-view-material="${escapeHtml(m.id)}">全文を見る</button><button class="btn danger mini" data-delete-material="${escapeHtml(m.id)}">削除</button></div></div>`).join('');
-    $$('[data-use-material]').forEach(b=>b.addEventListener('click',()=>useMaterial(b.dataset.useMaterial)));
-    $$('[data-view-material]').forEach(b=>b.addEventListener('click',()=>viewMaterial(b.dataset.viewMaterial)));
-    $$('[data-delete-material]').forEach(b=>b.addEventListener('click',()=>removeMaterial(b.dataset.deleteMaterial)));
-  }
-  function materialText(m){return `【人生素材：${m.title}】\n時期：${m.period}\nカテゴリ：${m.category}\n出来事：${m.detail}\n感情：${m.emotion}\n学び・意味：${m.lesson}\n公開範囲：${m.privacy}`;}
-  function useMaterial(id){const m=state.materials.find(x=>x.id===id);if(!m)return;const current=$('#experience').value.trim();$('#experience').value=(current?current+'\n\n':'')+materialText(m);showScreen('create');toast('記事素材へ追加しました。');}
-  function viewMaterial(id){const m=state.materials.find(x=>x.id===id);if(!m)return;openModal(m.title,materialText(m));}
-  async function removeMaterial(id){if(!confirm('この人生素材を削除しますか？'))return;try{await call('deleteMaterial',id);toast('削除しました。');loadMaterials();loadDashboard();}catch(e){toast(e.message);}}
-  $('#loadMaterialBtn').addEventListener('click',async()=>{await loadMaterials();if(!state.materials.length){toast('先に人生素材を登録してください。');showScreen('materials');return;}openMaterialChooser();});
-  function openMaterialChooser(){
-    $('#modalTitle').textContent='記事に使う人生素材を選択';
-    $('#modalBody').innerHTML=state.materials.map(m=>`<div class="item" style="margin-bottom:10px"><h4>${escapeHtml(m.title)}</h4><small>${escapeHtml(m.period)} / ${escapeHtml(m.category)}</small><div class="item-actions"><button class="btn soft mini" data-modal-use="${escapeHtml(m.id)}">この素材を追加</button></div></div>`).join('');
-    $('#modal').classList.add('show'); $$('[data-modal-use]').forEach(b=>b.addEventListener('click',()=>{useMaterial(b.dataset.modalUse);closeModal();}));
-  }
+      document.getElementById('btn-prev').disabled = state.activeIdx === 0;
+      document.getElementById('btn-prev').className = `flex gap-2 px-6 py-4 font-black border-4 ${state.activeIdx === 0 ? 'border-gray-200 text-gray-400 bg-gray-50' : 'border-blue-900 bg-white shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'} transition-all`;
+      
+      if (state.activeIdx === questions.length - 1) {
+        document.getElementById('btn-next').classList.add('hidden-step');
+        document.getElementById('btn-to-preview').classList.remove('hidden-step');
+      } else {
+        document.getElementById('btn-next').classList.remove('hidden-step');
+        document.getElementById('btn-to-preview').classList.add('hidden-step');
+      }
+      lucide.createIcons();
+    }
 
-  async function loadArticles(){
-    try{state.articles=await call('listArticles',80);renderArticles();}
-    catch(e){$('#articlesList').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>';}
-  }
-  function renderArticles(){
-    const root=$('#articlesList'); if(!state.articles.length){root.innerHTML='<div class="empty">まだ保存記事がありません。</div>';return;}
-    root.innerHTML=state.articles.map(a=>`<div class="item"><div class="item-head"><div><h4>${escapeHtml(a.title||a.theme)}</h4><small>${escapeHtml(a.createdAt)} / ${escapeHtml(a.type)} / ${escapeHtml(a.action)} / ${escapeHtml(a.model)}</small></div><span class="chip blue">${escapeHtml(a.status)}</span></div><div class="body">${escapeHtml(a.body.slice(0,500))}</div><div class="item-actions"><button class="btn soft mini" data-view-article="${escapeHtml(a.id)}">全文を見る</button><button class="btn ghost mini" data-copy-article="${escapeHtml(a.id)}">コピー</button><button class="btn danger mini" data-delete-article="${escapeHtml(a.id)}">削除</button></div></div>`).join('');
-    $$('[data-view-article]').forEach(b=>b.addEventListener('click',()=>viewArticle(b.dataset.viewArticle)));
-    $$('[data-copy-article]').forEach(b=>b.addEventListener('click',()=>copyArticle(b.dataset.copyArticle)));
-    $$('[data-delete-article]').forEach(b=>b.addEventListener('click',()=>removeArticle(b.dataset.deleteArticle)));
-  }
-  function viewArticle(id){const a=state.articles.find(x=>x.id===id);if(a)openModal(a.title||a.theme,a.body);}
-  async function copyArticle(id){const a=state.articles.find(x=>x.id===id);if(!a)return;try{await navigator.clipboard.writeText(a.body);toast('コピーしました。');}catch(e){toast('コピーできませんでした。');}}
-  async function removeArticle(id){if(!confirm('この記事を削除しますか？'))return;try{await call('deleteArticle',id);toast('削除しました。');loadArticles();loadDashboard();}catch(e){toast(e.message);}}
-  $('#refreshArticles').addEventListener('click',loadArticles);
+    function renderAll() {
+      let html = '';
+      questions.forEach((q, idx) => {
+        const ans = state.answers[q.id] || '';
+        html += `
+        <div class="bg-white border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] p-6 md:p-8 mb-8 transition-all focus-within:shadow-[8px_8px_0_0_#06b6d4]">
+          <h3 class="text-xl font-black mb-5 flex items-center gap-3"><span class="bg-blue-900 text-white p-2 border-2 border-blue-900"><i data-lucide="${q.icon}"></i></span> Q${idx+1}. ${q.category}</h3>
+          <p class="font-bold border-l-4 border-blue-900 pl-3 mb-5 leading-relaxed">${q.text}</p>
+          <div class="flex flex-wrap gap-2 mb-5">
+            ${q.suggestions.map(s => `<button onclick="insertTextAll('${q.id}', '${s}')" class="text-xs border-2 border-blue-900 px-3 py-2 bg-white font-bold hover:bg-blue-900 hover:text-white shadow-[2px_2px_0_0_#1e3a8a] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">+ ${s}</button>`).join('')}
+          </div>
+          <div class="relative">
+            <textarea id="textarea-${q.id}" oninput="handleAllInput('${q.id}', this.value)" class="w-full p-5 bg-blue-50 border-4 border-blue-900 focus:outline-none focus:shadow-[4px_4px_0_0_#06b6d4] font-bold min-h-[150px] transition-all" placeholder="${q.placeholder}">${ans}</textarea>
+            <div id="char-count-${q.id}" class="absolute bottom-4 right-4 text-xs bg-white px-2 py-1 border-2 border-blue-900 font-black">文字数: ${ans.length}</div>
+          </div>
+        </div>`;
+      });
+      document.getElementById('all-questions-container').innerHTML = html;
+    }
 
-  $('#refreshStatus').addEventListener('click',loadStatus); $('#saveModelBtn').addEventListener('click',async()=>{try{const r=await call('updateModel',$('#modelInput').value);$('#topModel').textContent=r.model;toast('モデル設定を保存しました。');}catch(e){toast(e.message);}});
-  function openModal(title,body){$('#modalTitle').textContent=title;$('#modalBody').textContent=body;$('#modal').classList.add('show');}
-  function closeModal(){$('#modal').classList.remove('show');}
-  $('#modalClose').addEventListener('click',closeModal);$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+    function renderNav() {
+      let html = '';
+      questions.forEach((q, idx) => {
+        const isAns = !!(state.answers[q.id] && state.answers[q.id].trim() !== '');
+        const isAct = state.mode === 'step' && state.activeIdx === idx;
+        const btnClass = isAct ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:border-blue-900';
+        const circleClass = isAns ? 'bg-cyan-400 text-blue-900 border-blue-900' : (isAct ? 'bg-blue-900 border-white' : 'bg-white border-blue-900');
+        
+        html += `
+        <button onclick="state.activeIdx=${idx}; setViewMode('step');" class="w-full text-left p-3 flex items-center gap-3 font-black border-2 transition-all ${btnClass}">
+          <div class="w-6 h-6 flex items-center justify-center text-xs border-2 ${circleClass}">${isAns ? '✓' : idx+1}</div>
+          <span class="truncate">${q.category}</span>
+        </button>`;
+      });
+      document.getElementById('nav-list').innerHTML = html;
+    }
 
-  if(!isGas){$('#topModel').textContent='ローカルプレビュー';$('#apiStatus').textContent='GASで開いてください';$('#apiStatus').className='ng';}
-  loadStatus(); loadDashboard();
-})();
-</script>
+    function renderPreview() {
+      let html = '';
+      questions.forEach((q, idx) => {
+        const ans = state.answers[q.id];
+        const hasAns = ans && ans.trim() !== '';
+        html += `
+        <div class="bg-white border-2 border-blue-900 p-6 shadow-[4px_4px_0_0_#1e3a8a]">
+          <div class="flex items-center justify-between border-b-2 border-gray-100 pb-3 mb-4">
+            <span class="font-black text-sm flex items-center gap-2"><span class="bg-blue-900 text-white px-3 py-1">Q${idx+1}</span>${q.category}</span>
+            <button onclick="state.activeIdx=${idx}; setViewMode('step'); changeStep('form');" class="text-xs bg-gray-100 border-2 border-blue-900 px-3 py-1 font-black hover:bg-blue-900 hover:text-white transition-colors">修正</button>
+          </div>
+          <p class="whitespace-pre-wrap font-bold text-base leading-relaxed ${hasAns ? 'text-gray-800' : 'text-gray-400'}">${hasAns ? ans : '（未回答）'}</p>
+        </div>`;
+      });
+      document.getElementById('preview-list').innerHTML = html;
+    }
+
+    function renderStatus(type) {
+      const icon = document.getElementById('status-icon');
+      const head = document.getElementById('status-heading');
+      const msg = document.getElementById('status-message');
+      const btn = document.getElementById('status-btn');
+      
+      icon.className = "w-24 h-24 border-4 border-blue-900 flex items-center justify-center mx-auto mb-8 shadow-[6px_6px_0_0_#1e3a8a]";
+      
+      if(type === 'submitting') {
+        icon.classList.add('bg-cyan-400');
+        icon.innerHTML = `<i data-lucide="loader-2" class="w-12 h-12 animate-spin text-blue-900"></i>`;
+        head.innerText = "Processing...";
+        msg.innerText = "ご入力いただいた内容を安全に送信しています。";
+        btn.classList.add('hidden-step');
+      } else if (type === 'complete') {
+        icon.classList.add('bg-blue-900', 'text-cyan-400');
+        icon.innerHTML = `<i data-lucide="check-circle" class="w-12 h-12"></i>`;
+        head.innerText = "送信完了！";
+        msg.innerText = "ご協力ありがとうございました！\n自動解析された要件定義書が管理者に安全に通知されました。";
+        btn.innerText = "最初に戻る";
+        btn.classList.remove('hidden-step');
+      } else {
+        icon.classList.add('bg-rose-600', 'text-white');
+        icon.innerHTML = `<i data-lucide="alert-circle" class="w-12 h-12"></i>`;
+        head.innerText = "送信エラー";
+        msg.innerText = "通信に失敗しました。時間をおいて再度お試しいただくか、担当者へ直接ご連絡ください。";
+        btn.innerText = "フォームに戻る";
+        btn.classList.remove('hidden-step');
+      }
+      lucide.createIcons();
+    }
+
+    function updateProgress() {
+      const c = questions.filter(q => state.answers[q.id] && state.answers[q.id].trim() !== '').length;
+      const p = Math.round((c / questions.length) * 100);
+      document.getElementById('progress-count').innerText = c;
+      document.getElementById('progress-percent').innerText = p + '%';
+      document.getElementById('progress-bar').style.width = p + '%';
+    }
+
+    // データ操作・送信
+    function resetData() {
+      if(confirm('入力をすべて消去しますか？')) {
+        state.answers = {};
+        localStorage.removeItem('hearing_answers');
+        state.activeIdx = 0;
+        updateProgress();
+        if(state.mode==='step') renderStep(); else renderAll();
+        renderNav();
+      }
+    }
+
+    function resetToHome() {
+      if(state.step === 'complete') {
+        state.answers = {};
+        localStorage.removeItem('hearing_answers');
+        state.activeIdx = 0;
+        updateProgress();
+        if(state.mode==='step') renderStep(); else renderAll();
+      }
+      changeStep('form');
+    }
+
+    function copyAnswers() {
+      const text = questions.map((q, i) => `【Q${i+1}. ${q.category}】\n${state.answers[q.id] || '未回答'}\n`).join('\n');
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        const btn = document.getElementById('btn-copy-answers');
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> COPIED!`;
+        btn.classList.add('bg-cyan-400', 'text-blue-900');
+        lucide.createIcons();
+        setTimeout(() => { btn.innerHTML = origHtml; btn.classList.remove('bg-cyan-400', 'text-blue-900'); lucide.createIcons(); }, 2000);
+      } catch(e) {}
+      document.body.removeChild(ta);
+    }
+
+    async function submitData() {
+      changeStep('submitting');
+      try {
+        if (!CONFIG.GAS_URL || CONFIG.GAS_URL === "YOUR_GAS_WEBAPP_URL_HERE") {
+          console.warn("GASのURLが設定されていません。デモ動作として扱います。");
+          await new Promise(r => setTimeout(r, 2000));
+          changeStep('complete');
+          return;
+        }
+
+        // GASへの送信
+        const response = await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            answers: state.answers, 
+            timestamp: new Date().toISOString() 
+          })
+        });
+        
+        changeStep('complete');
+
+      } catch(e) {
+        console.error("Submit error:", e);
+        changeStep('error');
+      }
+    }
+  </script>
 </body>
 </html>
