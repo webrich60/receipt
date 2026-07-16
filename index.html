@@ -1,1626 +1,275 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・支払い管理 - YUZU Special Edition</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WEBRICH Story Studio Personal</title>
   <style>
-    body { 
-      font-family: 'Noto Sans JP', sans-serif; 
-      background-color: #f3f4f6; 
-      overscroll-behavior-y: none; 
+    :root{
+      --bg:#f7f9fc;--surface:#fff;--surface2:#f3f7fb;--text:#172033;--muted:#6b7688;
+      --line:#dbe4ef;--line2:#c5d2e2;--brand:#1559b7;--brand2:#0f3f86;--soft:#eaf2ff;
+      --gold:#c8963f;--goldsoft:#fff7e6;--danger:#b42318;--success:#198754;
+      --shadow:0 20px 55px rgba(20,42,75,.10);--shadow-sm:0 8px 26px rgba(20,42,75,.08);
+      --radius:20px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
     }
-    .app-container { 
-      max-width: 430px; 
-      margin: 0 auto; 
-      background-color: #ffffff; 
-      height: 100vh; 
-      height: 100dvh; 
-      display: flex; 
-      flex-direction: column; 
-      position: relative; 
-      box-shadow: 0 0 20px rgba(0,0,0,0.05); 
-      overflow: hidden; 
-    }
-    .content-area { 
-      flex-grow: 1; 
-      overflow-y: auto; 
-      padding-bottom: 120px; 
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; } 
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    #toast { 
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out; 
-      z-index: 100; 
-    }
-    .toast-hidden { transform: translateY(-150%); opacity: 0; } 
-    .toast-visible { transform: translateY(0); opacity: 1; }
-    
-    .nav-item { transition: color 0.2s; } 
-    .nav-item.active { color: #4f46e5; font-weight: 700; }
-    
-    .spinner { 
-      border: 3px solid rgba(255, 255, 255, 0.3); 
-      border-radius: 50%; 
-      border-top: 3px solid white; 
-      width: 20px; 
-      height: 20px; 
-      animation: spin 1s linear infinite; 
-    }
-    .spinner-indigo { 
-      border-color: rgba(79, 70, 229, 0.2); 
-      border-top-color: #4f46e5; 
-    }
-    @keyframes spin { 
-      0% { transform: rotate(0deg); } 
-      100% { transform: rotate(360deg); } 
-    }
-    
-    .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.65}
+    button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app{min-height:100vh;display:grid;grid-template-columns:270px 1fr}
+    .sidebar{background:#fff;border-right:1px solid var(--line);padding:20px 15px;position:sticky;top:0;height:100vh;overflow:auto;z-index:30}
+    .brand{display:flex;gap:12px;align-items:center;padding:8px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:15px}.mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#4b8eea);display:grid;place-items:center;color:#fff;font-weight:950;font-size:18px}
+    .brand h1{font-size:17px;line-height:1.2;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}.personal{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:999px;background:var(--goldsoft);color:#7c5317;font-weight:900;font-size:10px;border:1px solid #efd7a9}
+    .nav-title{margin:16px 10px 8px;color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.12em}.nav-btn{width:100%;border:0;background:transparent;border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:10px;color:#43516a;font-weight:800;text-align:left;margin:3px 0}.nav-btn span{width:28px;height:28px;border-radius:9px;background:var(--surface2);display:grid;place-items:center}.nav-btn.active{background:var(--soft);color:var(--brand)}
+    .side-note{margin-top:20px;padding:13px;border:1px solid var(--line);border-radius:15px;background:#fbfdff;font-size:12px;color:var(--muted)}
+    main{min-width:0}.topbar{height:74px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20}.crumb{color:var(--muted);font-size:13px;font-weight:800}.user{display:flex;align-items:center;gap:10px}.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#d9e8ff,#fff3d7);display:grid;place-items:center;font-weight:900;color:var(--brand)}.user b,.user small{display:block}.user small{color:var(--muted)}
+    .mobile{display:none}.content{padding:28px;max-width:1380px;margin:0 auto 80px}.screen{display:none}.screen.active{display:block;animation:fade .18s ease-out}@keyframes fade{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:22px}.head h2{font-size:29px;margin:0;letter-spacing:-.03em}.head p{margin:5px 0 0;color:var(--muted)}
+    .hero{background:linear-gradient(135deg,#fff,#eef5ff);border:1px solid #d6e6ff;border-radius:26px;padding:26px;box-shadow:var(--shadow-sm);display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-bottom:18px}.hero h2{font-size:29px;line-height:1.3;margin:0 0 7px}.hero h2 strong{color:var(--brand)}.hero p{margin:0;color:var(--muted);max-width:760px}.hero-badge{padding:15px 18px;border-radius:18px;background:#fff;border:1px solid var(--line);text-align:center}.hero-badge b{font-size:26px;color:var(--brand);display:block}.hero-badge small{color:var(--muted)}
+    .grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.split{display:grid;grid-template-columns:430px 1fr;gap:18px;align-items:start}
+    .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:20px}.card h3{margin:0 0 8px;font-size:18px}.card p{margin:0;color:var(--muted)}.stat{display:flex;justify-content:space-between;gap:10px}.stat-num{font-size:34px;font-weight:950;color:var(--brand);letter-spacing:-.05em}.stat-label{font-weight:900}.stat-sub{font-size:12px;color:var(--muted)}
+    .field{margin-bottom:14px}.field label{display:flex;justify-content:space-between;gap:10px;font-weight:850;margin-bottom:7px;color:#243047}.hint{font-size:12px;color:var(--muted);font-weight:600}.input,.select,.textarea{width:100%;border:1px solid var(--line2);border-radius:14px;padding:12px 13px;background:#fff;color:var(--text);outline:none}.textarea{min-height:112px;resize:vertical}.textarea.tall{min-height:220px}.input:focus,.select:focus,.textarea:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(21,89,183,.12)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:14px;padding:11px 15px;min-height:44px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px}.primary{background:linear-gradient(135deg,var(--brand),#4b8eea);color:#fff;box-shadow:0 10px 24px rgba(21,89,183,.22)}.soft{background:var(--soft);color:var(--brand2);border:1px solid #cfe0fa}.ghost{background:#fff;color:var(--brand2);border:1px solid var(--line2)}.danger{background:#fff0ee;color:var(--danger);border:1px solid #ffd1ca}.gold{background:var(--goldsoft);color:#7c5317;border:1px solid #efd7a9}.btn:disabled{opacity:.55;cursor:not-allowed}.full{width:100%}
+    .chips{display:flex;gap:7px;flex-wrap:wrap}.chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#526078;font-size:12px;font-weight:850}.chip.blue{background:var(--soft);color:var(--brand);border-color:#cfe0fa}.chip.green{background:#eaf8f0;color:var(--success);border-color:#bfebd1}.chip.gold{background:var(--goldsoft);color:#7c5317;border-color:#efd7a9}
+    .output{white-space:pre-wrap;line-height:1.9;background:#fcfdff;border:1px solid var(--line);border-radius:16px;padding:18px;min-height:420px;max-height:70vh;overflow:auto}.empty{padding:35px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:17px;background:#fbfdff}.loader{display:none;align-items:center;gap:10px;color:var(--brand);font-weight:900;margin:14px 0}.loader.show{display:flex}.spin{width:20px;height:20px;border:3px solid #cfe0fa;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .list{display:grid;gap:12px}.item{border:1px solid var(--line);border-radius:16px;padding:15px;background:#fff}.item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.item h4{margin:0;font-size:16px}.item small{color:var(--muted)}.item .body{margin-top:9px;color:#43516a;white-space:pre-wrap;max-height:130px;overflow:hidden}.item-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.mini{padding:7px 10px;min-height:34px;border-radius:10px;font-size:12px}
+    .status-box{display:grid;gap:10px}.status-line{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.status-line:last-child{border-bottom:0}.ok{color:var(--success);font-weight:900}.ng{color:var(--danger);font-weight:900}.note{padding:13px;border-radius:15px;border:1px dashed var(--line2);background:#fbfdff;color:var(--muted);font-size:13px}.toast{position:fixed;right:18px;bottom:18px;background:#172033;color:#fff;padding:12px 15px;border-radius:14px;box-shadow:var(--shadow);z-index:100;opacity:0;transform:translateY(10px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}.modal{position:fixed;inset:0;background:rgba(15,32,55,.45);display:none;place-items:center;padding:20px;z-index:90}.modal.show{display:grid}.modal-card{background:#fff;width:min(920px,100%);max-height:88vh;overflow:auto;border-radius:22px;box-shadow:var(--shadow);padding:22px}.modal-body{white-space:pre-wrap;line-height:1.85}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:15px}
+    @media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.form-card{position:static!important}}
+    @media(max-width:760px){.app{display:block}.sidebar{position:fixed;left:-285px;width:270px;transition:.2s}.sidebar.open{left:0;box-shadow:var(--shadow)}.mobile{display:inline-flex}.topbar{padding:0 14px}.content{padding:18px 13px}.user>div:not(.avatar){display:none}.g4,.g3,.g2,.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.hero{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.head h2,.hero h2{font-size:24px}.btns .btn{flex:1}.output{min-height:360px}.overlay{position:fixed;inset:0;background:rgba(15,32,55,.35);z-index:25;display:none}.overlay.show{display:block}}
   </style>
 </head>
 <body>
+<div class="overlay" id="overlay"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="mark">W</div><div><h1>WEBRICH<br>Story Studio</h1><p>AI物語作成サポート</p><span class="personal">PERSONAL</span></div></div>
+    <div class="nav-title">MAIN</div>
+    <button class="nav-btn active" data-screen="dashboard"><span>⌂</span>ダッシュボード</button>
+    <button class="nav-btn" data-screen="create"><span>✦</span>記事を作る</button>
+    <button class="nav-btn" data-screen="materials"><span>◇</span>人生素材</button>
+    <button class="nav-btn" data-screen="articles"><span>稿</span>記事管理</button>
+    <div class="nav-title">SYSTEM</div>
+    <button class="nav-btn" data-screen="settings"><span>⚙</span>設定・接続</button>
+    <div class="side-note">ログインなし・自分専用。APIキーは画面に保存せず、GASのスクリプトプロパティで管理します。</div>
+  </aside>
 
-  <div class="app-container">
-    
-    <!-- トースト通知 -->
-    <div id="toast" class="absolute top-4 left-4 right-4 bg-gray-900 text-white text-sm font-bold py-4 px-4 rounded-xl shadow-2xl flex items-center gap-3 toast-hidden pointer-events-none">
-      <div id="toastIconContainer" class="flex-shrink-0">
-        <i data-lucide="info" class="w-6 h-6 text-indigo-300"></i>
-      </div>
-      <span id="toastMessage" class="leading-snug">メッセージ</span>
-    </div>
-
-    <!-- ヘッダー -->
-    <header class="bg-indigo-600 text-white h-14 flex items-center justify-between px-4 shrink-0 shadow-md z-10">
-      <div id="modeIndicator" class="flex items-center gap-1 bg-emerald-700/60 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
-        <span class="w-1.5 h-1.5 rounded-full bg-teal-300 animate-pulse"></span>
-        <span id="modeText">クラウド連携</span>
-      </div>
-      
-      <h1 class="font-bold text-sm tracking-wider flex items-center gap-1.5 absolute left-1/2 -translate-x-1/2">
-        <i data-lucide="wallet" class="w-4 h-4 text-emerald-300"></i>
-        領収書・支払い管理
-      </h1>
-      
-      <button onclick="switchTab('settings')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-indigo-500 active:scale-90 transition-all ml-auto">
-        <i data-lucide="settings" class="w-5 h-5"></i>
-      </button>
+  <main>
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px"><button class="btn ghost mobile" id="menuBtn">☰</button><div class="crumb" id="crumb">ダッシュボード / 今日の作業</div></div>
+      <div class="user"><div class="avatar">相</div><div><b>相棒</b><small id="topModel">接続確認中</small></div></div>
     </header>
 
-    <main class="content-area no-scrollbar bg-gray-50">
-      
-      <!-- ================= スキャン画面 ================= -->
-      <section id="tab-scan" class="p-4 min-h-full flex flex-col">
-        <div id="dropZone" class="flex-grow flex flex-col justify-center gap-4 py-8">
-          <button id="cameraBtn" class="w-full bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-indigo-400 hover:bg-indigo-50/50 transition-all active:scale-95">
-            <div class="bg-indigo-50 p-4 rounded-full"><i data-lucide="camera" class="w-10 h-10 text-indigo-600"></i></div>
-            <span class="font-bold text-indigo-900 text-base">カメラで撮影して読み込む</span>
-            <span class="text-xs text-gray-400">領収書を瞬時に自動で項目抽出</span>
-          </button>
-          
-          <div class="flex items-center gap-4 my-2">
-            <div class="h-px bg-gray-200 flex-grow"></div>
-            <span class="text-xs text-gray-400 font-medium">または</span>
-            <div class="h-px bg-gray-200 flex-grow"></div>
-          </div>
-
-          <button id="galleryBtn" class="w-full bg-white border border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-gray-600">
-            <i data-lucide="image" class="w-5 h-5 text-indigo-500"></i>
-            <span class="text-sm font-semibold">スマホ内の画像（アルバム）を選ぶ</span>
-          </button>
-
-          <!-- 手動入力ボタン -->
-          <div class="flex items-center gap-4 mt-6 mb-2">
-            <div class="h-px bg-gray-200 flex-grow"></div>
-            <span class="text-xs text-gray-400 font-medium">画像がない、または紛失時</span>
-            <div class="h-px bg-gray-200 flex-grow"></div>
-          </div>
-          <button id="showManualEntryBtn" class="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-200 transition-all active:scale-95 text-gray-600">
-            <i data-lucide="edit-3" class="w-5 h-5 text-gray-500"></i>
-            <span class="text-sm font-semibold">手動でデータを入力する</span>
-          </button>
-
-          <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
-          <input type="file" id="fileInput" accept="image/*" class="hidden">
+    <div class="content">
+      <section class="screen active" id="dashboard">
+        <div class="hero"><div><div class="chips"><span class="chip blue">月10万円を目指す実戦ツール</span><span class="chip green">GAS＋スプレッドシート</span></div><h2>悩みを、<strong>読まれる価値</strong>に変える。</h2><p>人生素材を整理し、神話物語と新PASONAで、無料note・有料note・事業ストーリー・LP・SNSへ展開します。</p><div class="btns"><button class="btn primary" data-go="create">新しい記事を作る</button><button class="btn soft" data-go="materials">人生素材を登録</button></div></div><div class="hero-badge"><b>PERSONAL</b><small>ログイン不要</small></div></div>
+        <div class="grid g4">
+          <div class="card stat"><div><div class="stat-label">人生素材</div><div class="stat-sub">記事の元になる体験</div></div><div class="stat-num" id="statMaterials">0</div></div>
+          <div class="card stat"><div><div class="stat-label">保存記事</div><div class="stat-sub">下書き・構成案</div></div><div class="stat-num" id="statArticles">0</div></div>
+          <div class="card stat"><div><div class="stat-label">今月の生成</div><div class="stat-sub">継続を見える化</div></div><div class="stat-num" id="statMonth">0</div></div>
+          <div class="card stat"><div><div class="stat-label">月間目標</div><div class="stat-sub">まずは現実的な一歩</div></div><div class="stat-num">10万</div></div>
         </div>
-
-        <!-- AI解析用のプレビューエリア -->
-        <div id="previewArea" class="hidden pb-8">
-          <div class="relative rounded-3xl overflow-hidden shadow-md border border-gray-100 bg-gray-100 mb-6">
-            <img id="imagePreview" src="" alt="プレビュー" class="w-full h-56 object-contain bg-slate-900">
-            <button id="clearBtn" class="absolute top-3 right-3 bg-gray-900/70 text-white p-2.5 rounded-full backdrop-blur-sm active:scale-90 transition-transform"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-          
-          <div class="flex items-center gap-2 mb-3 px-1">
-            <div class="bg-indigo-100 text-indigo-600 p-1 rounded-lg"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
-            <h3 class="text-xs font-bold text-gray-800">スキャン補助設定（必要な場合のみ）</h3>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4 mb-6">
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">書類の種類</label>
-              <select id="typeInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
-                <option value="">AIに自動判定させる</option>
-                <option value="領収書">領収書・レシート</option>
-                <option value="医療費">医療費の領収書</option>
-                <option value="書類">その他の書類・メモ</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">日付の指定（AI抽出を補正）</label>
-              <input type="date" id="dateInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">患者名（医療費専用）</label>
-              <input type="text" id="patientInput" placeholder="例: 山田 太郎" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">カテゴリの指定（AI自動判定を上書き）</label>
-              <select id="categoryInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
-                <option value="">AIに自動判定させる</option>
-                <optgroup label="一般経費">
-                  <option value="食費">食費</option>
-                  <option value="外食">外食</option>
-                  <option value="消耗品費">消耗品費</option>
-                  <option value="交通費">交通費</option>
-                  <option value="通信費">通信費</option>
-                  <option value="接待交際費">接待交際費</option>
-                  <option value="その他">その他</option>
-                </optgroup>
-                <optgroup label="医療費専用">
-                  <option value="診療・治療">診療・治療</option>
-                  <option value="医薬品購入">医薬品購入</option>
-                </optgroup>
-              </select>
-            </div>
-          </div>
-          
-          <button id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all flex justify-center items-center gap-2">
-            <i data-lucide="sparkles" class="w-5 h-5 text-emerald-300"></i><span>AIを呼び出して読み取る</span>
-          </button>
+        <div class="grid g3" style="margin-top:18px">
+          <div class="card"><h3>1. 素材をためる</h3><p>病気、仕事、家族、挑戦、失敗。短文でも保存し、記事の燃料にします。</p></div>
+          <div class="card"><h3>2. 構成を設計</h3><p>いきなり長文を生成せず、読者心理・見出し・商品導線を先に確認します。</p></div>
+          <div class="card"><h3>3. 公開して改善</h3><p>無料noteから有料note、商品、相談へ。数字を見ながら現実的に磨きます。</p></div>
         </div>
+      </section>
 
-        <!-- 手動入力エリア -->
-        <div id="manualEntryArea" class="hidden pb-8 mt-4">
-          <div class="flex items-center justify-between mb-4 px-1">
-            <div class="flex items-center gap-2 text-gray-800">
-              <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="edit-3" class="w-5 h-5"></i></div>
-              <h3 class="text-sm font-bold">手動でデータを入力</h3>
+      <section class="screen" id="create">
+        <div class="head"><div><h2>記事を作る</h2><p>構成案→本文→保存の順で、安全に仕上げます。</p></div><div class="chips"><span class="chip blue">神話物語</span><span class="chip gold">新PASONA</span></div></div>
+        <div class="split">
+          <div class="card form-card" style="position:sticky;top:95px">
+            <div class="form-grid">
+              <div class="field"><label>文章タイプ</label><select class="select" id="type"><option>無料note</option><option>有料note</option><option>事業ストーリー</option><option>LP文章</option><option>SNS投稿</option></select></div>
+              <div class="field"><label>構成</label><select class="select" id="framework"><option>神話物語＋新PASONA</option><option>神話物語中心</option><option>新PASONA中心</option><option>実用記事型</option></select></div>
+              <div class="field wide"><label>仮タイトル <span class="hint">未定でも可</span></label><input class="input" id="title" placeholder="例：61歳、目の病気をきっかけにAIへ挑戦した理由"></div>
+              <div class="field wide"><label>テーマ</label><textarea class="textarea" id="theme" placeholder="この記事で扱うテーマを入力"></textarea></div>
+              <div class="field wide"><label>想定読者</label><textarea class="textarea" id="target" placeholder="誰に読んでほしいか"></textarea></div>
+              <div class="field wide"><label>読者の悩み</label><textarea class="textarea" id="pain" placeholder="読者が今困っていること、不安、望み"></textarea></div>
+              <div class="field wide"><label>自分の体験・素材</label><textarea class="textarea tall" id="experience" placeholder="出来事、場面、感情、数字など。人生素材から貼り付けられます。"></textarea><div class="btns"><button class="btn ghost mini" id="loadMaterialBtn">人生素材から選ぶ</button></div></div>
+              <div class="field wide"><label>伝えたい結論</label><textarea class="textarea" id="message" placeholder="読者に持ち帰ってほしい気づき"></textarea></div>
+              <div class="field wide"><label>商品・サービス</label><textarea class="textarea" id="product" placeholder="紹介しない場合は空欄でOK"></textarea></div>
+              <div class="field"><label>文体</label><select class="select" id="tone"><option>前向きで読みやすい</option><option>映画のように臨場感</option><option>静かで深い</option><option>小説風エッセイ</option><option>ビジネス寄り</option></select></div>
+              <div class="field"><label>文字数</label><select class="select" id="length"><option>1500〜2500文字</option><option selected>2500〜3500文字</option><option>4000〜6000文字</option><option>7000文字以上</option></select></div>
+              <div class="field wide"><label>CTA</label><textarea class="textarea" id="cta" placeholder="次回記事、有料note、商品、相談などへの自然な案内"></textarea></div>
+              <div class="field wide"><label>既存文章 <span class="hint">リライト時のみ</span></label><textarea class="textarea tall" id="existingText" placeholder="既存の下書きを貼り付け"></textarea></div>
             </div>
-            <button id="cancelManualBtn" class="text-xs text-gray-500 bg-gray-200 px-3 py-1.5 rounded-full font-bold active:scale-95">キャンセル</button>
+            <div class="btns"><button class="btn soft" id="outlineBtn">構成案を生成</button><button class="btn primary" id="fullBtn">本文を生成</button><button class="btn ghost" id="rewriteBtn">リライト</button><button class="btn gold" id="snsBtn">SNSへ展開</button></div>
           </div>
-
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 mb-6">
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">種類 <span class="text-red-500">*</span></label>
-              <select id="manualTypeSelect" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="領収書">領収書・レシート (一般用)</option>
-                <option value="医療費">医療費の領収書 (医療費用)</option>
-                <option value="書類">その他の書類 (一般用)</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">日付 <span class="text-red-500">*</span></label>
-              <input type="date" id="manualDateOnlyInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">支払先・店舗名 <span class="text-red-500">*</span></label>
-              <input type="text" id="manualStoreInput" placeholder="例: セブンイレブン" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div id="manualPatientContainer" class="hidden">
-              <label class="text-xs font-bold text-gray-500 mb-1 block">患者名</label>
-              <input type="text" id="manualPatientNameInput" placeholder="例: 山田 太郎" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">金額 (円) <span class="text-red-500">*</span></label>
-              <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">¥</span>
-                <input type="number" id="manualAmountInput" placeholder="0" class="w-full pl-8 p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-800">
-              </div>
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">カテゴリ <span class="text-red-500">*</span></label>
-              <select id="manualCategorySelect" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <optgroup label="一般">
-                  <option value="食費">食費</option>
-                  <option value="外食">外食</option>
-                  <option value="消耗品費">消耗品費</option>
-                  <option value="交通費">交通費</option>
-                  <option value="通信費">通信費</option>
-                  <option value="接待交際費">接待交際費</option>
-                  <option value="その他">その他</option>
-                </optgroup>
-                <optgroup label="医療費"><option value="診療・治療">診療・治療</option><option value="医薬品購入">医薬品購入</option></optgroup>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs font-bold text-gray-500 mb-1 block">品目・詳細</label>
-              <input type="text" id="manualItemsInput" placeholder="例: コピー用紙、ペン" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-          </div>
-          
-          <button id="submitManualDataBtn" class="w-full bg-indigo-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all flex justify-center items-center gap-2">
-            <i data-lucide="save" class="w-5 h-5"></i><span>シートに保存する</span>
-          </button>
-        </div>
-
-        <div id="resultArea" class="hidden">
-          <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 text-center mb-6 mt-4">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="check" class="w-8 h-8"></i></div>
-            <h2 class="text-lg font-bold text-gray-800 mb-1">データを安全に保存しました</h2>
-            <p id="saveDestinationText" class="text-xs text-gray-400 mb-6">Googleスプレッドシートに保存されました</p>
-            <button id="resetBtn" class="w-full bg-indigo-50 text-indigo-700 font-bold py-3.5 px-4 rounded-xl hover:bg-indigo-100 active:scale-95 transition-all">続けて入力する</button>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h3>AI出力</h3><p id="resultMeta">生成前です。</p></div><div class="btns" style="margin:0"><button class="btn ghost mini" id="copyBtn" disabled>コピー</button><button class="btn soft mini" id="saveArticleBtn" disabled>記事管理へ保存</button><button class="btn danger mini" id="clearBtn">クリア</button></div></div>
+            <div class="loader" id="loader"><div class="spin"></div><span>文章を設計しています。入力内容が多いほど少し時間がかかります。</span></div>
+            <div class="output" id="result"><div class="empty">左側に素材を入力し、「構成案を生成」または「本文を生成」を押してください。</div></div>
           </div>
         </div>
       </section>
 
-      <!-- ================= 履歴・ダッシュボード画面 ================= -->
-      <section id="tab-history" class="p-4 hidden min-h-full flex flex-col">
-        
-        <!-- 今月の支出ダッシュボード -->
-        <div class="bg-indigo-600 rounded-3xl p-5 mb-4 text-white shadow-xl shadow-indigo-200/50 relative overflow-hidden">
-          <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500 rounded-full opacity-50"></div>
-          <div class="absolute right-12 -bottom-6 w-16 h-16 bg-indigo-400 rounded-full opacity-20"></div>
-          
-          <div class="relative z-10">
-            <p class="text-[11px] text-indigo-100 font-bold mb-1 flex items-center gap-1"><i data-lucide="pie-chart" class="w-3 h-3"></i> 今月の支出合計</p>
-            <div class="text-3xl font-black tracking-tight mb-5" id="summaryTotal">¥0</div>
-            
-            <div class="grid grid-cols-3 gap-2">
-              <div class="bg-indigo-700/50 p-2.5 rounded-2xl border border-indigo-500/30">
-                <p class="text-[10px] text-indigo-200 mb-1 font-medium">一般・経費</p>
-                <p class="text-xs font-bold truncate" id="summaryGeneral">¥0</p>
-              </div>
-              <div class="bg-indigo-700/50 p-2.5 rounded-2xl border border-indigo-500/30">
-                <p class="text-[10px] text-indigo-200 mb-1 font-medium">医療費</p>
-                <p class="text-xs font-bold truncate" id="summaryMedical">¥0</p>
-              </div>
-              <div class="bg-indigo-700/50 p-2.5 rounded-2xl border border-indigo-500/30">
-                <p class="text-[10px] text-indigo-200 mb-1 font-medium">固定支払</p>
-                <p class="text-xs font-bold truncate" id="summaryFixed">¥0</p>
-              </div>
+      <section class="screen" id="materials">
+        <div class="head"><div><h2>人生素材</h2><p>単語や短文でも構いません。後から記事の場面に育てます。</p></div><button class="btn primary" id="newMaterialBtn">＋ 素材を追加</button></div>
+        <div class="grid g2">
+          <div class="card" id="materialFormCard">
+            <h3>素材を登録</h3>
+            <div class="form-grid">
+              <div class="field wide"><label>タイトル</label><input class="input" id="matTitle" placeholder="例：昨年7月、左目が突然見えなくなった"></div>
+              <div class="field"><label>時期・年齢</label><input class="input" id="matPeriod" placeholder="61歳、2025年7月など"></div>
+              <div class="field"><label>カテゴリ</label><select class="select" id="matCategory"><option>病気・再出発</option><option>仕事・実績</option><option>家族</option><option>借金・生活再建</option><option>AIへの挑戦</option><option>失敗・学び</option><option>その他</option></select></div>
+              <div class="field wide"><label>出来事・詳細</label><textarea class="textarea tall" id="matDetail" placeholder="何が起きたか。見えたもの、聞こえた言葉、行動など"></textarea></div>
+              <div class="field wide"><label>その時の感情</label><textarea class="textarea" id="matEmotion" placeholder="不安、悔しさ、安心、決意など"></textarea></div>
+              <div class="field wide"><label>今振り返って分かる意味</label><textarea class="textarea" id="matLesson" placeholder="この経験が今につながっている点"></textarea></div>
+              <div class="field wide"><label>公開範囲</label><select class="select" id="matPrivacy"><option>ぼかして使う</option><option>noteでも公開</option><option>自分用メモ</option></select></div>
             </div>
+            <button class="btn primary full" id="saveMaterialBtn">人生素材を保存</button>
           </div>
-        </div>
-
-        <!-- 各項目の支出内訳 -->
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-          <h3 class="text-[11px] font-bold text-gray-500 mb-3 flex items-center gap-1"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> 各項目の支出内訳</h3>
-          <div id="categoryBreakdownList" class="space-y-3">
-              <p class="text-xs text-gray-400 text-center py-2">データがありません</p>
-          </div>
-        </div>
-
-        <!-- AI税理士アドバイス -->
-        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100/50 rounded-2xl p-4 mb-6 shadow-sm relative overflow-hidden">
-          <div class="flex items-center gap-2 mb-3">
-            <div class="bg-indigo-600 p-1.5 rounded-lg text-white"><i data-lucide="bot" class="w-4 h-4"></i></div>
-            <h3 class="text-xs font-bold text-indigo-900">AI税理士ゆずのプロ分析</h3>
-          </div>
-          
-          <div id="aiAdviceContent" class="text-sm text-gray-700 leading-relaxed mb-3 hidden bg-white p-4 rounded-xl border border-indigo-100 shadow-inner max-h-60 overflow-y-auto no-scrollbar">
-            <!-- アドバイス文が挿入されます -->
-          </div>
-          
-          <div class="flex gap-2">
-            <button id="getAiAdviceBtn" class="flex-1 bg-white text-indigo-600 font-bold py-2.5 px-3 rounded-xl text-xs border border-indigo-200 hover:bg-indigo-100 active:scale-95 transition-all flex justify-center items-center gap-1.5 shadow-sm">
-              <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i> ワンポイント分析
-            </button>
-            <button id="getAiAdviceDetailBtn" class="hidden flex-1 bg-indigo-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-md shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex justify-center items-center gap-1.5">
-              <i data-lucide="search" class="w-4 h-4 text-emerald-300"></i> 詳細なプロの分析
-            </button>
-          </div>
-        </div>
-
-        <!-- 履歴データヘッダー -->
-        <div class="flex justify-between items-center mb-3 px-1">
-          <h2 class="text-sm font-bold text-gray-800">最近の登録データ</h2>
-          <button id="refreshHistoryBtn" class="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full font-bold active:scale-95 transition-transform"><i data-lucide="refresh-cw" class="w-3 h-3"></i> 更新</button>
-        </div>
-        
-        <!-- カテゴリ別履歴フィルター -->
-        <div class="flex gap-2 overflow-x-auto no-scrollbar mb-3 px-1 pb-1">
-          <button class="history-filter-btn active bg-gray-800 text-white px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm" data-filter="all">すべて</button>
-          <button class="history-filter-btn bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors" data-filter="一般用">一般・経費</button>
-          <button class="history-filter-btn bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors" data-filter="医療費用">医療費</button>
-          <button class="history-filter-btn bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors" data-filter="固定支払">固定支払</button>
-        </div>
-
-        <!-- 履歴リスト -->
-        <div id="historyList" class="space-y-3 pb-2"></div>
-        
-        <!-- もっと見るボタン -->
-        <button id="loadMoreHistoryBtn" class="hidden w-full mt-2 mb-8 py-3.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center gap-1">
-          <i data-lucide="chevron-down" class="w-4 h-4"></i>もっと見る
-        </button>
-
-        <div id="historyLoading" class="hidden flex-col items-center justify-center text-gray-400 gap-3 py-20"><div class="spinner spinner-indigo"></div><span class="text-xs font-medium tracking-wider">読み込み中...</span></div>
-        <div id="historyEmpty" class="hidden flex-col items-center justify-center text-gray-400 py-20"><div class="bg-gray-100 p-4 rounded-full mb-3"><i data-lucide="inbox" class="w-8 h-8 text-gray-300"></i></div><p class="text-sm font-medium">履歴がありません</p></div>
-      </section>
-
-      <!-- ================= 毎月の支払画面 ================= -->
-      <section id="tab-monthly" class="p-4 hidden min-h-full flex flex-col">
-        <div class="mb-4 px-1 flex items-center gap-2 text-gray-800">
-          <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="calendar-clock" class="w-5 h-5"></i></div>
-          <h2 class="text-sm font-bold">毎月の支払（固定費）登録</h2>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-5">
-          <div>
-            <label class="text-xs font-bold text-gray-500 mb-1 block">支払項目</label>
-            <div class="flex gap-2">
-              <select id="monthlyItemSelect" class="flex-grow p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
-                <!-- JSで動的に追加 -->
-              </select>
-              <button type="button" id="deleteItemBtn" title="選択した項目を削除" class="hidden bg-red-50 text-red-500 px-3 py-2 rounded-xl border border-red-100 hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
-              </button>
-            </div>
-          </div>
-          <div id="newMonthlyItemContainer" class="hidden pl-4 border-l-2 border-indigo-200 mt-1">
-            <label class="text-xs font-bold text-indigo-600 mb-1 block">新しい項目名を入力</label>
-            <div class="flex gap-2">
-              <input type="text" id="newMonthlyItemInput" placeholder="例: サブスク代" class="flex-grow p-3 text-sm bg-indigo-50 border border-indigo-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <button type="button" id="addNewItemBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 active:scale-95 transition-all whitespace-nowrap">リストに追加</button>
-            </div>
-            <p class="text-[10px] text-gray-400 mt-1">※今回だけの場合は「リストに追加」を押さずに下の金額を入れて保存してください。</p>
-          </div>
-          <div id="subItemContainer" class="hidden pl-4 border-l-2 border-indigo-200">
-            <label class="text-xs font-bold text-gray-500 mb-1 block text-indigo-600">借り受け先を選択</label>
-            <select id="monthlySubItemInput" class="w-full p-3 text-sm bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="イオン">イオン</option>
-              <option value="ライン">ライン</option>
-              <option value="楽天">楽天</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-500 mb-1 block">金額 (円)</label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">¥</span>
-              <input type="number" id="monthlyAmountInput" placeholder="0" class="w-full pl-8 p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-gray-800">
-            </div>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-gray-500 mb-1 block">支払日</label>
-            <input type="date" id="monthlyDateInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          </div>
-          <button id="submitMonthlyBtn" class="w-full bg-indigo-600 text-white font-bold py-4 px-4 rounded-2xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all flex justify-center items-center gap-2 mt-2">
-            <i data-lucide="save" class="w-5 h-5"></i><span>固定支払を記録する</span>
-          </button>
-        </div>
-        <div id="monthlyResultArea" class="hidden">
-           <div class="bg-green-50 p-4 rounded-2xl border border-green-100 text-center mt-4">
-             <p class="text-green-600 font-bold text-sm">✓ 固定費を記録しました</p>
-             <button onclick="resetMonthlyForm()" class="mt-3 text-xs bg-white text-green-700 px-4 py-2 rounded-lg shadow-sm border border-green-200 active:scale-95">続けて入力</button>
-           </div>
+          <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h3>保存済み素材</h3><p>記事作成画面へ送れます。</p></div><button class="btn ghost mini" id="refreshMaterials">更新</button></div><div class="list" id="materialsList" style="margin-top:15px"><div class="empty">読み込み中です。</div></div></div>
         </div>
       </section>
 
-      <!-- ================= 設定画面 ================= -->
-      <section id="tab-settings" class="p-4 hidden min-h-full">
-        <h2 class="text-sm font-bold text-gray-800 mb-4 px-1">システム設定</h2>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-6">
-          
-          <div>
-            <label class="block text-xs font-bold text-gray-600 mb-2 flex items-center gap-1"><i data-lucide="link" class="w-4 h-4 text-indigo-500"></i> GAS連携URL (スプレッドシート)</label>
-            <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2 transition-shadow">
-            <p class="text-[10px] text-gray-400 leading-snug">GASを設定すると、スプレッドシートへの永続保存やクラウドでの一括管理が有効化されます。</p>
-          </div>
-          
-          <button id="saveSettingsBtn" class="w-full bg-gray-800 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-gray-900 active:scale-95 transition-transform flex justify-center items-center gap-1.5">
-            <i data-lucide="save" class="w-4 h-4 text-emerald-300"></i> 設定を保存する
-          </button>
-        </div>
+      <section class="screen" id="articles">
+        <div class="head"><div><h2>記事管理</h2><p>AI生成した構成案・本文をスプレッドシートに保存します。</p></div><button class="btn ghost" id="refreshArticles">更新</button></div>
+        <div class="card"><div class="list" id="articlesList"><div class="empty">読み込み中です。</div></div></div>
       </section>
 
-    </main>
-
-    <!-- ================= ボトムナビゲーション ================= -->
-    <nav class="absolute bottom-0 w-full h-16 bg-white border-t border-gray-100 flex justify-around items-center px-2 z-20 pb-safe">
-      <button onclick="switchTab('scan')" id="nav-scan" class="nav-item active flex flex-col items-center justify-center w-full h-full text-indigo-600 gap-1">
-        <i data-lucide="camera" class="w-6 h-6"></i><span class="text-[10px]">スキャン</span>
-      </button>
-      <button onclick="switchTab('history')" id="nav-history" class="nav-item flex flex-col items-center justify-center w-full h-full text-gray-400 gap-1">
-        <i data-lucide="list" class="w-6 h-6"></i><span class="text-[10px]">履歴</span>
-      </button>
-      <button onclick="switchTab('monthly')" id="nav-monthly" class="nav-item flex flex-col items-center justify-center w-full h-full text-gray-400 gap-1">
-        <i data-lucide="credit-card" class="w-6 h-6"></i><span class="text-[10px]">固定支払</span>
-      </button>
-    </nav>
-  </div>
-
-  <!-- ========================================== -->
-  <!-- モーダル（各種自作ダイアログ） -->
-  <!-- ========================================== -->
-
-  <!-- ① 重複登録 警告モーダル -->
-  <div id="duplicateConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-65 hidden p-4">
-    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 text-center">
-      <div class="mx-auto bg-amber-100 text-amber-600 p-3.5 rounded-full"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
-      <h3 class="text-lg font-bold text-gray-900">同じ月内に重複登録を検知</h3>
-      <p class="text-xs text-gray-700 leading-relaxed text-left bg-gray-50 p-4 rounded-xl border border-gray-100" id="duplicateDetails">
-        <!-- JSで動的にメッセージが挿入されます -->
-      </p>
-      <p class="text-xs text-gray-400 font-medium leading-snug">
-        このままスプレッドシートに二重に登録（保存）してもよろしいですか？
-      </p>
-      <div class="flex gap-2 pt-2">
-        <button id="cancelDuplicateBtn" class="flex-1 bg-gray-100 text-gray-700 py-3.5 rounded-2xl text-sm font-bold active:scale-95 transition-transform">キャンセル</button>
-        <button id="forceSubmitBtn" class="flex-1 bg-amber-600 text-white py-3.5 rounded-2xl text-sm font-bold active:scale-95 shadow-md shadow-amber-500/20 transition-transform">そのまま保存する</button>
-      </div>
+      <section class="screen" id="settings">
+        <div class="head"><div><h2>設定・接続</h2><p>APIキーはHTMLや画面に置かず、GAS側だけで管理します。</p></div></div>
+        <div class="grid g2">
+          <div class="card"><h3>接続状態</h3><div class="status-box"><div class="status-line"><span>OpenAI APIキー</span><span id="apiStatus">確認中</span></div><div class="status-line"><span>スプレッドシート</span><span id="sheetStatus">確認中</span></div><div class="status-line"><span>アプリ版</span><b id="versionStatus">-</b></div></div><div class="btns"><a class="btn soft" id="sheetLink" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:none">スプレッドシートを開く</a><button class="btn ghost" id="refreshStatus">再確認</button></div></div>
+          <div class="card"><h3>使用モデル</h3><div class="field"><label>OpenAIモデルID</label><input class="input" id="modelInput" placeholder="gpt-5.6-luna"></div><button class="btn primary" id="saveModelBtn">モデル設定を保存</button><div class="note" style="margin-top:14px">低コスト優先の初期値です。品質重視へ変える場合も、画面からモデルIDだけ変更できます。</div></div>
+          <div class="card"><h3>初回設定</h3><p>Apps Scriptエディタで <b>setupProject()</b> を1回実行し、権限を承認します。</p><div class="note" style="margin-top:12px">スクリプトプロパティ：<br>OPENAI_API_KEY = OpenAIのAPIキー<br>OPENAI_MODEL = gpt-5.6-luna<br>SPREADSHEET_ID = 自動設定</div></div>
+          <div class="card"><h3>Personal版の安全方針</h3><p>ログインなしで公開範囲を「自分のみ」にする前提です。ウェブアプリのアクセス権は必ず自分だけにしてください。</p><div class="chips" style="margin-top:14px"><span class="chip green">APIキー非表示</span><span class="chip blue">サーバー側送信</span><span class="chip gold">公開前に本人確認</span></div></div>
+        </div>
+      </section>
     </div>
-  </div>
+  </main>
+</div>
 
-  <!-- ② データ修正（編集）モーダル -->
-  <div id="editModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-65 hidden p-4">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-sm shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-base font-bold text-gray-900 flex items-center gap-1.5"><i data-lucide="edit-3" class="w-5 h-5 text-indigo-500"></i>登録データの修正</h3>
-        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
-      </div>
-      
-      <div class="space-y-4">
-        <input type="hidden" id="editRowIndex">
-        <input type="hidden" id="editSourceSheet">
-        <input type="hidden" id="editType">
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><h3 id="modalTitle">内容</h3><button class="btn ghost mini" id="modalClose">閉じる</button></div><div class="modal-body" id="modalBody"></div></div></div>
 
-        <div>
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">日付</label>
-          <input type="date" id="editDateInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">店舗名・支払先</label>
-          <input type="text" id="editStoreInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div id="editPatientContainer" class="hidden">
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">患者名 (医療費のみ)</label>
-          <input type="text" id="editPatientInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">金額 (円)</label>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">¥</span>
-            <input type="number" id="editAmountInput" class="w-full pl-8 p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
-          </div>
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">カテゴリ</label>
-          <select id="editCategorySelect" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <optgroup label="一般">
-              <option value="食費">食費</option>
-              <option value="外食">外食</option>
-              <option value="消耗品費">消耗品費</option>
-              <option value="交通費">交通費</option>
-              <option value="通信費">通信費</option>
-              <option value="接待交際費">接待交際費</option>
-              <option value="その他">その他</option>
-            </optgroup>
-            <optgroup label="医療費"><option value="診療・治療">診療・治療</option><option value="医薬品購入">医薬品購入</option></optgroup>
-          </select>
-        </div>
-        <div>
-          <label class="text-[11px] font-bold text-gray-500 block mb-1">品目・詳細</label>
-          <input type="text" id="editItemsInput" class="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-      </div>
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const state = { materials: [], articles: [], result: '', lastPayload: null, lastModel: '' };
+  const isGas = typeof google !== 'undefined' && google.script && google.script.run;
 
-      <div class="flex gap-2 mt-6">
-        <button onclick="closeEditModal()" class="flex-1 bg-gray-100 text-gray-700 py-3.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform">キャンセル</button>
-        <button id="saveEditBtn" class="flex-1 bg-indigo-600 text-white py-3.5 rounded-2xl text-xs font-bold active:scale-95 shadow-md shadow-indigo-500/20 transition-transform">変更を保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ③ データ削除 確認モーダル -->
-  <div id="deleteConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-65 hidden p-4">
-    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 text-center">
-      <div class="mx-auto bg-red-100 text-red-600 p-3.5 rounded-full"><i data-lucide="trash-2" class="w-8 h-8"></i></div>
-      <h3 class="text-lg font-bold text-gray-900">本当に削除しますか？</h3>
-      <p class="text-xs text-gray-500 leading-relaxed text-left bg-gray-50 p-3 rounded-xl border border-gray-100" id="deleteDetails">
-        削除対象: 
-      </p>
-      <p class="text-xs text-red-500 font-bold leading-snug">
-        ※削除したデータは元に戻せません。
-      </p>
-      <div class="flex gap-2 pt-2">
-        <button onclick="closeDeleteModal()" class="flex-1 bg-gray-100 text-gray-700 py-3.5 rounded-2xl text-sm font-bold active:scale-95 transition-transform">キャンセル</button>
-        <button id="executeDeleteBtn" class="flex-1 bg-red-600 text-white py-3.5 rounded-2xl text-sm font-bold active:scale-95 shadow-md shadow-red-500/20 transition-transform">削除する</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    lucide.createIcons();
-
-    // グローバル変数
-    let currentSummaryData = null; 
-    let allHistoryData = []; 
-    let currentHistoryFilter = 'all'; 
-    let currentDisplayCount = 10; 
-    let pendingUploadPayload = null; 
-
-    const tabs = { 
-      scan: document.getElementById('tab-scan'), 
-      history: document.getElementById('tab-history'), 
-      settings: document.getElementById('tab-settings'), 
-      monthly: document.getElementById('tab-monthly') 
-    };
-    const navs = { 
-      scan: document.getElementById('nav-scan'), 
-      history: document.getElementById('nav-history'), 
-      monthly: document.getElementById('nav-monthly') 
-    };
-
-    // -------------------------------------------------------------
-    // ユーティリティ・GAS通信関連
-    // -------------------------------------------------------------
-    function getGasUrl() {
-      return localStorage.getItem('gasAppUrl');
-    }
-
-    function requireGas() {
-      const url = getGasUrl();
-      if (!url) {
-        showToast('設定画面からGAS連携URLを設定してください', true);
-        switchTab('settings');
-        return false;
-      }
-      return true;
-    }
-
-    function showToast(message, isError = false) {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toastMessage');
-      const iconContainer = document.getElementById('toastIconContainer');
-      
-      const iconName = isError ? 'alert-circle' : 'check-circle';
-      const iconColor = isError ? 'text-red-200' : 'text-emerald-300';
-      
-      iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6 ${iconColor}"></i>`;
-      lucide.createIcons();
-
-      toastMsg.textContent = message; 
-      toast.classList.remove('bg-gray-900', 'bg-red-600');
-      toast.classList.add(isError ? 'bg-red-600' : 'bg-gray-900');
-      
-      toast.classList.remove('toast-hidden'); 
-      toast.classList.add('toast-visible');
-      setTimeout(() => { 
-        toast.classList.remove('toast-visible'); 
-        toast.classList.add('toast-hidden'); 
-      }, 3500);
-    }
-
-    window.switchTab = function(tabName) {
-      Object.keys(tabs).forEach(key => { tabs[key].classList.add('hidden'); });
-      Object.keys(navs).forEach(key => { 
-        navs[key].classList.remove('active'); 
-        navs[key].classList.replace('text-indigo-600', 'text-gray-400'); 
-      });
-      tabs[tabName].classList.remove('hidden');
-      if(navs[tabName]) { 
-        navs[tabName].classList.add('active'); 
-        navs[tabName].classList.replace('text-gray-400', 'text-indigo-600'); 
-      }
-      if (tabName === 'history') loadHistory();
-    };
-
-    // -------------------------------------------------------------
-    // 手動入力フォームのハンドリング
-    // -------------------------------------------------------------
-    const dropZone = document.getElementById('dropZone');
-    const manualEntryArea = document.getElementById('manualEntryArea');
-    const resultArea = document.getElementById('resultArea');
-    const previewArea = document.getElementById('previewArea');
-
-    document.getElementById('showManualEntryBtn').addEventListener('click', () => {
-      dropZone.classList.add('hidden'); 
-      manualEntryArea.classList.remove('hidden'); 
-      document.getElementById('manualDateOnlyInput').valueAsDate = new Date();
+  function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
+  function escapeHtml(value){ return String(value||'').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function call(name, ...args){
+    return new Promise((resolve,reject)=>{
+      if(!isGas){ reject(new Error('この画面はGASウェブアプリとして開いてください。')); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(err=>reject(new Error(err && err.message ? err.message : String(err))))[name](...args);
     });
-
-    document.getElementById('cancelManualBtn').addEventListener('click', () => {
-      manualEntryArea.classList.add('hidden'); 
-      dropZone.classList.remove('hidden'); 
-      dropZone.classList.add('flex');
-    });
-
-    const manualTypeSelect = document.getElementById('manualTypeSelect');
-    const manualPatientContainer = document.getElementById('manualPatientContainer');
-    manualTypeSelect.addEventListener('change', (e) => {
-      if (e.target.value === '医療費') {
-        manualPatientContainer.classList.remove('hidden');
-      } else {
-        manualPatientContainer.classList.add('hidden');
-      }
-    });
-
-    document.getElementById('submitManualDataBtn').addEventListener('click', () => submitManualData(false));
-
-    // -------------------------------------------------------------
-    // 重複警告ダイアログの挙動
-    // -------------------------------------------------------------
-    document.getElementById('cancelDuplicateBtn').addEventListener('click', closeDuplicateModal);
-    document.getElementById('forceSubmitBtn').addEventListener('click', async () => {
-      if (!pendingUploadPayload) return;
-      if (!requireGas()) return;
-      
-      const executeBtn = document.getElementById('forceSubmitBtn');
-      executeBtn.disabled = true;
-      executeBtn.textContent = '保存中...';
-
-      try {
-        // GASに強制送信
-        pendingUploadPayload.force = true;
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify(pendingUploadPayload), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('重複を承認し、スプレッドシートに保存しました！');
-          onSaveSuccess();
-        } else {
-          showToast('エラーが発生しました: ' + (result.error || '不明'), true);
-        }
-      } catch (e) {
-        showToast('通信エラーが発生しました', true);
-      } finally {
-        executeBtn.disabled = false;
-        executeBtn.textContent = 'そのまま保存する';
-      }
-    });
-
-    function closeDuplicateModal() {
-      document.getElementById('duplicateConfirmModal').classList.add('hidden');
-      pendingUploadPayload = null;
-    }
-
-    function onSaveSuccess() {
-      closeDuplicateModal();
-      manualEntryArea.classList.add('hidden'); 
-      previewArea.classList.add('hidden');
-      resultArea.classList.remove('hidden'); 
-      
-      // 入力値のクリア
-      document.getElementById('manualStoreInput').value = ''; 
-      document.getElementById('manualAmountInput').value = ''; 
-      document.getElementById('manualItemsInput').value = ''; 
-      document.getElementById('manualPatientNameInput').value = '';
-    }
-
-    // -------------------------------------------------------------
-    // データの保存（手動入力）
-    // -------------------------------------------------------------
-    async function submitManualData(force = false) {
-      if (!requireGas()) return;
-
-      const mType = manualTypeSelect.value;
-      const mDate = document.getElementById('manualDateOnlyInput').value;
-      const mStore = document.getElementById('manualStoreInput').value.trim();
-      const mAmount = document.getElementById('manualAmountInput').value;
-      const mCategory = document.getElementById('manualCategorySelect').value;
-      const mPatient = document.getElementById('manualPatientNameInput').value.trim();
-      const mItems = document.getElementById('manualItemsInput').value.trim();
-
-      if (!mDate || !mStore || !mAmount) { 
-        showToast('日付、支払先、金額は必ず入力してください', true); 
-        return; 
-      }
-
-      const btn = document.getElementById('submitManualDataBtn'); 
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<div class="spinner"></div><span class="ml-2">保存中...</span>'; 
-      btn.disabled = true;
-
-      const inputData = { 
-        type: mType, 
-        date: mDate, 
-        store: mStore, 
-        patientName: mPatient, 
-        amount: Number(mAmount), 
-        category: mCategory, 
-        items: mItems || '-' 
-      };
-
-      const payload = { 
-        action: 'upload_text', 
-        force: force, 
-        data: inputData 
-      };
-
-      try {
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify(payload), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          showToast('手動入力データを保存しました！');
-          onSaveSuccess();
-        } else if (result.duplicate) {
-          pendingUploadPayload = payload;
-          let dateText = "";
-          if (result.existingDate && result.existingDate.includes('-')) {
-            const parts = result.existingDate.split('-');
-            dateText = `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
-          } else if (result.existingDate) {
-            const eDate = new Date(result.existingDate);
-            dateText = `${eDate.getMonth() + 1}月${eDate.getDate()}日`;
-          } else {
-            dateText = `同じ月内`;
-          }
-          document.getElementById('duplicateDetails').innerHTML = 
-            `<span class="font-bold text-red-600 text-[13px]">すでに【 ${dateText} 】に同じ内容で登録済みです。</span><br><br>
-            ・支払先: ${mStore}<br>
-            ・金額: ¥${Number(mAmount).toLocaleString()}`;
-          document.getElementById('duplicateConfirmModal').classList.remove('hidden');
-        } else {
-          showToast('エラー: ' + (result.error || '不明なエラー'), true);
-        }
-      } catch (error) { 
-        showToast('エラーが発生しました。', true); 
-      } finally { 
-        btn.innerHTML = originalText; 
-        btn.disabled = false; 
-        lucide.createIcons(); 
-      }
-    }
-
-    // -------------------------------------------------------------
-    // 固定支払 (毎月の固定支払) の制御
-    // -------------------------------------------------------------
-    const initialDefaultItems = ["家賃", "電話（スマホ・ネット代含む）代金", "飛鳥パソコン代金", "全労災（保険）：自動車保険（2台分）", "借り受け金", "N-BOX代金"];
-    let savedMonthlyItems = JSON.parse(localStorage.getItem('appMonthlyItems'));
-    if (!savedMonthlyItems) {
-      savedMonthlyItems = [...initialDefaultItems];
-      localStorage.setItem('appMonthlyItems', JSON.stringify(savedMonthlyItems));
-    }
-
-    const monthlyItemSelect = document.getElementById('monthlyItemSelect');
-    const subItemContainer = document.getElementById('subItemContainer');
-    const newMonthlyItemContainer = document.getElementById('newMonthlyItemContainer');
-    const newMonthlyItemInput = document.getElementById('newMonthlyItemInput');
-    const addNewItemBtn = document.getElementById('addNewItemBtn');
-    const deleteItemBtn = document.getElementById('deleteItemBtn');
-
-    function renderMonthlySelect() {
-      monthlyItemSelect.innerHTML = '<option value="">選択してください</option>';
-      savedMonthlyItems.forEach(item => { 
-        const option = document.createElement('option'); 
-        option.value = item; 
-        option.textContent = item; 
-        monthlyItemSelect.appendChild(option); 
-      });
-      const otherOption = document.createElement('option'); 
-      otherOption.value = 'その他'; 
-      otherOption.textContent = 'その他 (新しく追加)'; 
-      monthlyItemSelect.appendChild(otherOption); 
-      lucide.createIcons();
-    }
-    renderMonthlySelect(); 
-
-    monthlyItemSelect.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (val === '借り受け金') subItemContainer.classList.remove('hidden'); else subItemContainer.classList.add('hidden');
-      if (val === 'その他') { 
-        newMonthlyItemContainer.classList.remove('hidden'); 
-        newMonthlyItemInput.focus(); 
-      } else { 
-        newMonthlyItemContainer.classList.add('hidden'); 
-      }
-      if (val !== '' && val !== 'その他') deleteItemBtn.classList.remove('hidden'); else deleteItemBtn.classList.add('hidden');
-    });
-
-    deleteItemBtn.addEventListener('click', () => {
-      const valToRemove = monthlyItemSelect.value;
-      if (!valToRemove || valToRemove === 'その他') return;
-      savedMonthlyItems = savedMonthlyItems.filter(item => item !== valToRemove); 
-      localStorage.setItem('appMonthlyItems', JSON.stringify(savedMonthlyItems));
-      renderMonthlySelect(); 
-      resetMonthlyForm(); 
-      showToast('固定支払項目を削除しました');
-    });
-
-    addNewItemBtn.addEventListener('click', () => {
-      const newItem = newMonthlyItemInput.value.trim();
-      if (!newItem || newItem === 'その他' || newItem === '借り受け金') return showToast('無効な名前です', true);
-      if (!savedMonthlyItems.includes(newItem)) { 
-        savedMonthlyItems.push(newItem); 
-        localStorage.setItem('appMonthlyItems', JSON.stringify(savedMonthlyItems)); 
-      }
-      renderMonthlySelect(); 
-      monthlyItemSelect.value = newItem; 
-      monthlyItemSelect.dispatchEvent(new Event('change')); 
-      newMonthlyItemInput.value = ''; 
-      showToast('リストに追加しました');
-    });
-
-    document.getElementById('monthlyDateInput').valueAsDate = new Date();
-
-    window.resetMonthlyForm = function() {
-      monthlyItemSelect.value = ''; 
-      monthlyItemSelect.dispatchEvent(new Event('change'));
-      document.getElementById('monthlyAmountInput').value = ''; 
-      document.getElementById('monthlyResultArea').classList.add('hidden'); 
-      document.getElementById('submitMonthlyBtn').disabled = false;
-    }
-
-    document.getElementById('submitMonthlyBtn').addEventListener('click', async () => {
-      if (!requireGas()) return;
-
-      let itemVal = monthlyItemSelect.value;
-      const amountVal = document.getElementById('monthlyAmountInput').value;
-      const dateVal = document.getElementById('monthlyDateInput').value;
-      
-      if (itemVal === 'その他') { 
-        const tempItemName = newMonthlyItemInput.value.trim(); 
-        if (tempItemName) itemVal = tempItemName; 
-      }
-      if (!itemVal || itemVal === 'その他' || !amountVal || !dateVal) { 
-        showToast('項目、金額、日付を入力してください', true); 
-        return; 
-      }
-
-      let finalItemName = itemVal;
-      let finalStoreName = itemVal; 
-      if (itemVal === '借り受け金') {
-        finalStoreName = '借り受け金 - ' + document.getElementById('monthlySubItemInput').value;
-      }
-
-      const btn = document.getElementById('submitMonthlyBtn'); 
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<div class="spinner"></div><span class="ml-2">保存中...</span>'; 
-      btn.disabled = true;
-
-      const inputData = { 
-        type: '固定支払', 
-        date: dateVal, 
-        store: finalStoreName, 
-        amount: Number(amountVal), 
-        category: '固定費', 
-        items: finalItemName 
-      };
-
-      const payload = { 
-        action: 'upload_text', 
-        force: false, 
-        data: inputData 
-      };
-
-      try {
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify(payload), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          document.getElementById('monthlyResultArea').classList.remove('hidden'); 
-          showToast('固定支払を記録しました！'); 
-          newMonthlyItemInput.value = '';
-        } else if (result.duplicate) {
-          pendingUploadPayload = payload;
-          let dateText = "";
-          if (result.existingDate && result.existingDate.includes('-')) {
-            const parts = result.existingDate.split('-');
-            dateText = `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
-          } else if (result.existingDate) {
-            const eDate = new Date(result.existingDate);
-            dateText = `${eDate.getMonth() + 1}月${eDate.getDate()}日`;
-          } else {
-            dateText = `同じ月内`;
-          }
-          document.getElementById('duplicateDetails').innerHTML = 
-            `<span class="font-bold text-red-600 text-[13px]">すでに【 ${dateText} 】に同じ内容で登録済みです。</span><br><br>
-            ・項目: ${finalStoreName}<br>
-            ・金額: ¥${Number(amountVal).toLocaleString()}`;
-          document.getElementById('duplicateConfirmModal').classList.remove('hidden');
-        } else {
-          showToast('エラー: ' + (result.error || '不明なエラー'), true);
-        }
-      } catch (error) { 
-        showToast('通信エラーが発生しました。', true); 
-      } finally { 
-        btn.innerHTML = originalText; 
-        btn.disabled = false; 
-        lucide.createIcons(); 
-      }
-    });
-
-    // -------------------------------------------------------------
-    // カメラ撮影 ⇄ アルバム選択のハンドリング
-    // -------------------------------------------------------------
-    const cameraInput = document.getElementById('cameraInput');
-    const fileInput = document.getElementById('fileInput');
-    const imagePreview = document.getElementById('imagePreview');
-    const submitBtn = document.getElementById('submitBtn');
-    let base64Data = null;
-    let currentFile = null;
-
-    document.getElementById('cameraBtn').addEventListener('click', () => cameraInput.click());
-    document.getElementById('galleryBtn').addEventListener('click', () => fileInput.click());
-    cameraInput.addEventListener('change', handleFileChange); 
-    fileInput.addEventListener('change', handleFileChange);
-
-    function handleFileChange(e) {
-      if (e.target.files.length > 0) {
-        currentFile = e.target.files[0];
-        if (!currentFile.type.startsWith('image/')) return showToast('画像ファイルを選択してください', true);
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          base64Data = e.target.result; 
-          imagePreview.src = base64Data;
-          dropZone.classList.add('hidden'); 
-          resultArea.classList.add('hidden'); 
-          previewArea.classList.remove('hidden');
-          // 本日の日付をデフォルト入力
-          document.getElementById('dateInput').valueAsDate = new Date();
-        };
-        reader.readAsDataURL(currentFile);
-      }
-    }
-
-    document.getElementById('clearBtn').addEventListener('click', resetScanForm); 
-    document.getElementById('resetBtn').addEventListener('click', resetScanForm);
-    
-    function resetScanForm() {
-      base64Data = null; 
-      currentFile = null; 
-      fileInput.value = ''; 
-      cameraInput.value = '';
-      previewArea.classList.add('hidden'); 
-      resultArea.classList.add('hidden'); 
-      manualEntryArea.classList.add('hidden');
-      dropZone.classList.remove('hidden'); 
-      dropZone.classList.add('flex');
-    }
-
-    // -------------------------------------------------------------
-    // 最先端AI (Gemini API) 直通 OCR スキャン
-    // -------------------------------------------------------------
-    submitBtn.addEventListener('click', () => startAiOcr(false));
-
-    async function callGeminiDirect(payloadRaw) {
-      if (!requireGas()) throw new Error('GASが未設定です');
-      
-      const gasUrl = getGasUrl();
-      const response = await fetch(gasUrl, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'call_gemini', payload: payloadRaw }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-      });
-      const result = await response.json();
-      if (result.success) {
-        return result.result; 
-      } else {
-        throw new Error(result.error || 'GAS経由でのAI呼び出しに失敗しました');
-      }
-    }
-
-    async function startAiOcr(force = false) {
-      if (!base64Data) return;
-      if (!requireGas()) return;
-
-      const originalText = submitBtn.innerHTML; 
-      submitBtn.innerHTML = '<div class="spinner"></div><span class="ml-2">ゆずAIがスキャン中...</span>'; 
-      submitBtn.disabled = true; 
-      submitBtn.classList.replace('bg-indigo-600', 'bg-indigo-400');
-
-      try {
-        const base64Clean = base64Data.split(',')[1];
-        const mimeType = currentFile.type;
-
-        // 手動で補助指定された値
-        const selectedType = document.getElementById('typeInput').value;
-        const selectedDate = document.getElementById('dateInput').value;
-        const selectedPatient = document.getElementById('patientInput').value.trim();
-        const selectedCategory = document.getElementById('categoryInput').value;
-
-        // Gemini への指示プロンプト設計
-        let instruction = `以下の領収書または書類の画像から正確なデータを抽出し、日本語のJSON形式で答えてください。
-余計な解説文やマークダウンのデコレーションは一切省き、指定されたJSONスキーマに完全に従う純粋なオブジェクトだけを返してください。`;
-
-        if (selectedType) instruction += `\n- 書類の種類は「${selectedType}」に決定されています。`;
-        if (selectedDate) instruction += `\n- 取引日付は「${selectedDate}」に近しいはずです。`;
-        if (selectedPatient) instruction += `\n- 患者名として「${selectedPatient}」が想定されます。`;
-        if (selectedCategory) instruction += `\n- 分類カテゴリは「${selectedCategory}」に決定されています。`;
-
-        const geminiPayload = {
-          contents: [{
-            parts: [
-              { text: instruction },
-              { inlineData: { mimeType: mimeType, data: base64Clean } }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                type: { 
-                  type: "STRING", 
-                  description: "書類の種類。'領収書' (またはレシート), '医療費' (診療明細、薬局の領収書), '書類' のいずれか" 
-                },
-                date: { 
-                  type: "STRING", 
-                  description: "YYYY-MM-DD 形式の日付。西暦不明な場合は今年として補完してください" 
-                },
-                store: { 
-                  type: "STRING", 
-                  description: "店舗名、会社名、クリニック名、支払先" 
-                },
-                amount: { 
-                  type: "NUMBER", 
-                  description: "合計の支払金額。数値のみ（カンマや円記号は除く）" 
-                },
-                category: { 
-                  type: "STRING", 
-                  description: "最適と思われるカテゴリを以下から選択： '食費', '外食', '消耗品費', '交通費', '通信費', '接待交際費', '診療・治療', '医薬品購入', 'その他'" 
-                },
-                patientName: { 
-                  type: "STRING", 
-                  description: "医療費の場合のみ、受診した患者の氏名。見当たらない、または一般領収書の場合は空文字列にしてください" 
-                },
-                items: { 
-                  type: "STRING", 
-                  description: "品目や詳細（例: 飲食代, 風邪薬, 文房具など。20文字以内）" 
-                }
-              },
-              required: ["type", "date", "store", "amount", "category", "items"]
-            }
-          }
-        };
-
-        const geminiResult = await callGeminiDirect(geminiPayload);
-        const textResult = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (!textResult) {
-          throw new Error('AIからの解析結果を取得できませんでした。');
-        }
-
-        const parsedData = JSON.parse(textResult);
-
-        // 必要に応じて手動補正フォームの値を最優先でマージ
-        if (selectedType) parsedData.type = selectedType;
-        if (selectedDate) parsedData.date = selectedDate;
-        if (selectedPatient) parsedData.patientName = selectedPatient;
-        if (selectedCategory) parsedData.category = selectedCategory;
-
-        // データベースに保存
-        const payloadToUpload = {
-          action: 'upload',
-          force: force,
-          data: {
-            type: parsedData.type,
-            date: parsedData.date,
-            store: parsedData.store,
-            patientName: parsedData.patientName || '',
-            amount: Number(parsedData.amount),
-            category: parsedData.category,
-            items: parsedData.items || '-'
-          }
-        };
-
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify(payloadToUpload), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          onSaveSuccess();
-          showToast(`AI解析成功! スプレッドシートに保存しました (¥${Number(parsedData.amount).toLocaleString()})`);
-        } else if (result.duplicate) {
-          pendingUploadPayload = payloadToUpload;
-          let dateText = "";
-          if (result.existingDate && result.existingDate.includes('-')) {
-            const parts = result.existingDate.split('-');
-            dateText = `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
-          } else if (result.existingDate) {
-            const eDate = new Date(result.existingDate);
-            dateText = `${eDate.getMonth() + 1}月${eDate.getDate()}日`;
-          } else {
-            dateText = `同じ月内`;
-          }
-          document.getElementById('duplicateDetails').innerHTML = 
-            `<span class="font-bold text-red-600 text-[13px]">すでに【 ${dateText} 】に同じ内容で登録済みです。</span><br><br>
-            ・支払先: ${parsedData.store}<br>
-            ・金額: ¥${Number(parsedData.amount).toLocaleString()}`;
-          document.getElementById('duplicateConfirmModal').classList.remove('hidden');
-        } else {
-          showToast('エラー: ' + (result.error || '不明なエラー'), true);
-        }
-
-      } catch (error) {
-        console.error(error);
-        showToast('AI解析中にエラーが発生しました。もう一度お試しください。', true);
-      } finally {
-        submitBtn.innerHTML = originalText; 
-        submitBtn.disabled = false; 
-        submitBtn.classList.replace('bg-indigo-400', 'bg-indigo-600'); 
-        lucide.createIcons();
-      }
-    }
-
-    // -------------------------------------------------------------
-    // 履歴・ダッシュボードの読み込み
-    // -------------------------------------------------------------
-    const historyList = document.getElementById('historyList');
-    const historyLoading = document.getElementById('historyLoading');
-    const historyEmpty = document.getElementById('historyEmpty');
-    const categoryBreakdownList = document.getElementById('categoryBreakdownList');
-    const loadMoreHistoryBtn = document.getElementById('loadMoreHistoryBtn');
-
-    document.getElementById('refreshHistoryBtn').addEventListener('click', loadHistory);
-
-    document.querySelectorAll('.history-filter-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.history-filter-btn').forEach(b => {
-          b.classList.remove('bg-gray-800', 'text-white', 'active');
-          b.classList.add('bg-white', 'border', 'border-gray-200', 'text-gray-600');
-        });
-        e.target.classList.remove('bg-white', 'border', 'border-gray-200', 'text-gray-600');
-        e.target.classList.add('bg-gray-800', 'text-white', 'active');
-        
-        currentHistoryFilter = e.target.dataset.filter;
-        currentDisplayCount = 10; 
-        renderFilteredHistory();
-      });
-    });
-
-    loadMoreHistoryBtn.addEventListener('click', () => {
-      currentDisplayCount += 10;
-      renderFilteredHistory();
-    });
-
-    const categoryColors = {
-      '食費': 'bg-orange-400',
-      '外食': 'bg-red-400',
-      '消耗品費': 'bg-indigo-500',
-      '交通費': 'bg-emerald-500',
-      '通信費': 'bg-sky-500',
-      '接待交際費': 'bg-purple-500',
-      '診療・治療': 'bg-teal-500',
-      '医薬品購入': 'bg-rose-500',
-      '固定費': 'bg-amber-500',
-      'その他': 'bg-gray-500'
-    };
-
-    async function loadHistory() {
-      if (!requireGas()) return;
-      historyList.innerHTML = ''; 
-      historyEmpty.classList.add('hidden'); 
-      historyLoading.classList.remove('hidden'); 
-      historyLoading.classList.add('flex');
-      loadMoreHistoryBtn.classList.add('hidden');
-      
-      document.getElementById('aiAdviceContent').classList.add('hidden');
-      document.getElementById('getAiAdviceDetailBtn').classList.add('hidden');
-
-      try {
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify({ action: 'getHistory' }), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        historyLoading.classList.add('hidden'); 
-        historyLoading.classList.remove('flex');
-        
-        if (result.success) {
-          currentSummaryData = result.summary;
-          renderSummaryUi(result.summary);
-          
-          if (result.data && result.data.length > 0) {
-            allHistoryData = result.data;
-            currentDisplayCount = 10;
-            renderFilteredHistory();
-          } else { 
-            allHistoryData = [];
-            historyEmpty.classList.remove('hidden'); 
-            historyEmpty.classList.add('flex'); 
-          }
-        } else {
-          throw new Error(result.error);
-        }
-      } catch (error) { 
-        historyLoading.classList.add('hidden'); 
-        historyLoading.classList.remove('flex'); 
-        showToast('データの取得に失敗しました', true); 
-      }
-    }
-
-    function renderSummaryUi(summary) {
-      if (!summary) return;
-      document.getElementById('summaryTotal').textContent = '¥' + summary.total.toLocaleString();
-      document.getElementById('summaryGeneral').textContent = '¥' + summary.general.toLocaleString();
-      document.getElementById('summaryMedical').textContent = '¥' + summary.medical.toLocaleString();
-      document.getElementById('summaryFixed').textContent = '¥' + summary.fixed.toLocaleString();
-      
-      categoryBreakdownList.innerHTML = '';
-      if (summary.categories && Object.keys(summary.categories).length > 0) {
-        const sortedCats = Object.entries(summary.categories).sort((a, b) => b[1] - a[1]);
-        
-        sortedCats.forEach(([catName, amt]) => {
-          if (amt > 0) {
-            const percentage = Math.min(100, Math.max(1, (amt / summary.total) * 100));
-            const barColor = categoryColors[catName] || 'bg-indigo-500';
-            categoryBreakdownList.innerHTML += `
-              <div>
-                <div class="flex justify-between items-end mb-1">
-                  <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full ${barColor}"></span>
-                    ${catName}
-                  </span>
-                  <span class="text-xs font-black text-gray-900 tracking-tight">¥${amt.toLocaleString()} <span class="text-[10px] text-gray-400 font-normal">(${Math.round(percentage)}%)</span></span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                  <div class="${barColor} h-1.5 rounded-full progress-bar" style="width: 0%" data-width="${percentage}%"></div>
-                </div>
-              </div>
-            `;
-          }
-        });
-        
-        setTimeout(() => {
-          document.querySelectorAll('.progress-bar').forEach(bar => {
-            bar.style.width = bar.getAttribute('data-width');
-          });
-        }, 50);
-
-      } else {
-        categoryBreakdownList.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">今月の集計データがありません</p>';
-      }
-    }
-
-    function renderFilteredHistory() {
-      historyList.innerHTML = '';
-      historyEmpty.classList.add('hidden'); 
-      historyEmpty.classList.remove('flex');
-      
-      let filteredData = allHistoryData;
-      if (currentHistoryFilter !== 'all') {
-        filteredData = allHistoryData.filter(item => item.sourceSheet === currentHistoryFilter);
-      }
-
-      if (filteredData.length === 0) {
-        historyEmpty.classList.remove('hidden'); 
-        historyEmpty.classList.add('flex');
-        loadMoreHistoryBtn.classList.add('hidden');
-        return;
-      }
-
-      const dataToShow = filteredData.slice(0, currentDisplayCount);
-      
-      if (filteredData.length > currentDisplayCount) {
-        loadMoreHistoryBtn.classList.remove('hidden');
-      } else {
-        loadMoreHistoryBtn.classList.add('hidden');
-      }
-
-      renderHistory(dataToShow);
-    }
-
-    let pendingDeleteInfo = null;
-
-    function renderHistory(data) {
-      data.forEach((item, index) => {
-        let iconName = 'file-text', iconBg = 'bg-gray-100', iconColor = 'text-gray-500';
-        if (item.type === '領収書' || item.sourceSheet === '一般用') { 
-          iconName = 'receipt'; iconBg = 'bg-indigo-100'; iconColor = 'text-indigo-600'; 
-        } else if (item.type === '医療費' || item.sourceSheet === '医療費用') { 
-          iconName = 'stethoscope'; iconBg = 'bg-teal-100'; iconColor = 'text-teal-600'; 
-        } else if (item.type === '固定支払' || item.sourceSheet === '固定支払') { 
-          iconName = 'credit-card'; iconBg = 'bg-amber-100'; iconColor = 'text-amber-600'; 
-        } 
-        
-        let amountText = '-'; 
-        if (item.amount && !isNaN(item.amount)) {
-          amountText = '¥' + Number(item.amount).toLocaleString();
-        }
-
-        const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 relative';
-        
-        const itemsHtml = (item.items && item.items !== '-' && item.items !== '') 
-          ? `<p class="text-[11px] text-gray-400 truncate mt-0.5">${item.items}</p>` 
-          : '';
-
-        const actionsHtml = `
-          <div class="flex gap-2 justify-end mt-2 pt-2 border-t border-gray-50">
-            <button onclick="openEditModal('${item.sourceSheet}', ${item.rowIndex}, ${index})" class="text-[10px] text-gray-500 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold active:scale-95 transition-all">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 修正
-            </button>
-            <button onclick="confirmDelete('${item.sourceSheet}', ${item.rowIndex}, ${index})" class="text-[10px] text-gray-400 hover:bg-red-50 hover:text-red-500 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold active:scale-95 transition-all">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 削除
-            </button>
-          </div>
-        `;
-
-        card.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div class="flex items-center gap-3 w-2/3">
-              <div class="p-2.5 ${iconBg} rounded-xl shrink-0"><i data-lucide="${iconName}" class="w-5 h-5 ${iconColor}"></i></div>
-              <div class="truncate overflow-hidden w-full">
-                <p class="text-[10px] text-gray-400 font-medium tracking-wide mb-0.5">${item.date || '日付不明'}</p>
-                <p class="text-sm font-bold text-gray-800 truncate">${item.store || '名称なし'}</p>
-                ${itemsHtml}
-              </div>
-            </div>
-            <div class="text-right shrink-0">
-              <p class="text-base font-black text-gray-950 tracking-tight">${amountText}</p>
-              <div class="mt-1"><span class="text-[9px] px-2 py-0.5 bg-gray-50 text-gray-500 rounded-full border border-gray-200/60">${item.category || '未分類'}</span></div>
-            </div>
-          </div>
-          ${actionsHtml}`;
-        historyList.appendChild(card);
-      });
-      lucide.createIcons();
-    }
-
-    // -------------------------------------------------------------
-    // 削除の確定処理
-    // -------------------------------------------------------------
-    window.confirmDelete = function(sourceSheet, rowIndex, index) {
-      const item = allHistoryData[index];
-      pendingDeleteInfo = { sourceSheet, rowIndex, index };
-      document.getElementById('deleteDetails').innerHTML = `・日付: ${item.date}<br>・店舗/項目: ${item.store}<br>・金額: ¥${Number(item.amount).toLocaleString()}<br>・分類: ${item.category}`;
-      document.getElementById('deleteConfirmModal').classList.remove('hidden');
-    }
-
-    window.closeDeleteModal = function() {
-      document.getElementById('deleteConfirmModal').classList.add('hidden');
-      pendingDeleteInfo = null;
-    }
-
-    document.getElementById('executeDeleteBtn').addEventListener('click', async () => {
-      if (!pendingDeleteInfo) return;
-      if (!requireGas()) return;
-
-      const btn = document.getElementById('executeDeleteBtn');
-      btn.disabled = true;
-      btn.textContent = '削除中...';
-
-      try {
-        const gasUrl = getGasUrl();
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify({ action: 'delete_row', sourceSheet: pendingDeleteInfo.sourceSheet, rowIndex: pendingDeleteInfo.rowIndex }), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('スプレッドシートからデータを完全削除しました');
-          closeDeleteModal();
-          loadHistory();
-        } else {
-          showToast('エラー: ' + result.error, true);
-        }
-      } catch (e) {
-        showToast('通信に失敗しました', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '削除する';
-      }
-    });
-
-    // -------------------------------------------------------------
-    // 修正（編集）モーダルの制御
-    // -------------------------------------------------------------
-    window.openEditModal = function(sourceSheet, rowIndex, index) {
-      const item = allHistoryData[index];
-      
-      document.getElementById('editRowIndex').value = rowIndex;
-      document.getElementById('editSourceSheet').value = sourceSheet;
-      document.getElementById('editType').value = item.type;
-      
-      let rawDate = item.date;
-      if (rawDate && rawDate.includes('/')) {
-        rawDate = rawDate.replace(/\//g, '-');
-      }
-      document.getElementById('editDateInput').value = rawDate;
-      document.getElementById('editStoreInput').value = item.store;
-      document.getElementById('editAmountInput').value = item.amount;
-      document.getElementById('editCategorySelect').value = item.category;
-      document.getElementById('editItemsInput').value = item.items === '-' ? '' : item.items;
-
-      const patientContainer = document.getElementById('editPatientContainer');
-      if (sourceSheet === '医療費用') {
-        patientContainer.classList.remove('hidden');
-        document.getElementById('editPatientInput').value = item.patientName || '';
-      } else {
-        patientContainer.classList.add('hidden');
-      }
-
-      document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    window.closeEditModal = function() {
-      document.getElementById('editModal').classList.add('hidden');
-    }
-
-    document.getElementById('saveEditBtn').addEventListener('click', async () => {
-      const rowIndex = document.getElementById('editRowIndex').value;
-      const sourceSheet = document.getElementById('editSourceSheet').value;
-      const type = document.getElementById('editType').value;
-      
-      const dateVal = document.getElementById('editDateInput').value;
-      const storeVal = document.getElementById('editStoreInput').value.trim();
-      const amountVal = document.getElementById('editAmountInput').value;
-      const categoryVal = document.getElementById('editCategorySelect').value;
-      const itemsVal = document.getElementById('editItemsInput').value.trim();
-      const patientVal = document.getElementById('editPatientInput').value.trim();
-
-      if (!dateVal || !storeVal || !amountVal) {
-        showToast('日付、店舗名、金額は必須です', true);
-        return;
-      }
-      if (!requireGas()) return;
-
-      const btn = document.getElementById('saveEditBtn');
-      btn.disabled = true;
-      btn.textContent = '保存中...';
-
-      const updateData = {
-        type: type,
-        date: dateVal,
-        store: storeVal,
-        amount: String(amountVal),
-        category: categoryVal,
-        items: itemsVal || '-',
-        patientName: patientVal,
-        rowIndex: Number(rowIndex),
-        sourceSheet: sourceSheet
-      };
-
-      try {
-        const gasUrl = getGasUrl();
-        const payload = {
-          action: 'update_row',
-          sourceSheet: sourceSheet,
-          rowIndex: rowIndex,
-          data: updateData
-        };
-
-        const response = await fetch(gasUrl, { 
-          method: 'POST', 
-          body: JSON.stringify(payload), 
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-        });
-        const result = await response.json();
-        if (result.success) {
-          showToast('クラウドデータを更新しました');
-          closeEditModal();
-          loadHistory();
-        } else {
-          showToast('エラー: ' + result.error, true);
-        }
-      } catch (e) {
-        showToast('通信エラーが発生しました', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '変更を保存';
-      }
-    });
-
-    // -------------------------------------------------------------
-    // ゆずAI税理士による支出アドバイス
-    // -------------------------------------------------------------
-    document.getElementById('getAiAdviceBtn').addEventListener('click', () => fetchAiAdviceDirect('ワンポイント'));
-    document.getElementById('getAiAdviceDetailBtn').addEventListener('click', () => fetchAiAdviceDirect('詳細'));
-
-    async function fetchAiAdviceDirect(detailLevel) {
-      if (!currentSummaryData || currentSummaryData.total === 0) {
-        return showToast('分析するデータがまだ登録されていません', true);
-      }
-      if (!requireGas()) return;
-
-      const btnId = detailLevel === '詳細' ? 'getAiAdviceDetailBtn' : 'getAiAdviceBtn';
-      const btn = document.getElementById(btnId);
-      const originalText = btn.innerHTML;
-      
-      btn.innerHTML = '<div class="spinner spinner-indigo w-4 h-4 border-2 border-t-2"></div><span class="ml-1">ゆずAI分析中...</span>';
-      btn.disabled = true;
-      
-      const adviceContent = document.getElementById('aiAdviceContent');
-      if(adviceContent.classList.contains('hidden')) {
-          adviceContent.classList.remove('hidden');
-          adviceContent.innerHTML = '<p class="text-indigo-400 text-center text-xs py-3 animate-pulse">AI税理士ゆずがあなたの帳簿を監査しています...</p>';
-      } else {
-          adviceContent.innerHTML = '<p class="text-indigo-400 text-center text-xs py-3 animate-pulse">より深くプロレベルの分析を実行中です...</p>';
-      }
-
-      try {
-        let systemPrompt = `あなたは優秀で気さくな「AI税理士のゆず」です。相棒（ユーザー）の今月の支出データをもとに、親身で少しユニークな財務アドバイスを届けてください。
-相棒を「相棒」と呼び、事実に基づいて分かりやすく伝えてください。
-マークダウン形式（**強調**、リスト等）を使って読みやすくフォーマットしてください。`;
-
-        let userPrompt = `今月の財務データは以下の通りです：
-- 支出総額: ¥${currentSummaryData.total.toLocaleString()}
-- 一般経費: ¥${currentSummaryData.general.toLocaleString()}
-- 医療費: ¥${currentSummaryData.medical.toLocaleString()}
-- 固定費: ¥${currentSummaryData.fixed.toLocaleString()}
-- カテゴリ別：\n`;
-
-        Object.entries(currentSummaryData.categories).forEach(([name, val]) => {
-          userPrompt += `  * ${name}: ¥${val.toLocaleString()}\n`;
-        });
-
-        userPrompt += `\n指示：このデータに対し、【${detailLevel}】レベルの監査アドバイスを日本語で作成してください。`;
-        if (detailLevel === 'ワンポイント') {
-          userPrompt += ' 2〜3行の簡潔で心に刺さるアドバイスにしてください。';
-        } else {
-          userPrompt += ' 節税のヒント（医療費控除への言及など）や固定費の見直し提案を含む、具体的かつ実践的な解説にしてください。';
-        }
-
-        const payload = {
-          contents: [{
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-          }]
-        };
-
-        const result = await callGeminiDirect(payload);
-        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (rawText) {
-          let formattedAdvice = rawText.replace(/\n/g, '<br>');
-          formattedAdvice = formattedAdvice.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-indigo-700">$1</span>');
-          adviceContent.innerHTML = formattedAdvice;
-          
-          if (detailLevel === 'ワンポイント') {
-            document.getElementById('getAiAdviceDetailBtn').classList.remove('hidden');
-          }
-        } else {
-          throw new Error();
-        }
-
-      } catch (error) {
-        showToast('AIアドバイスの生成に失敗しました。', true);
-        adviceContent.innerHTML = '<p class="text-red-500 text-xs py-2">分析を取得できませんでした。データを見直して再試行してください。</p>';
-      } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        lucide.createIcons();
-      }
-    }
-
-    // -------------------------------------------------------------
-    // 設定保存と初期化
-    // -------------------------------------------------------------
-    const gasUrlInput = document.getElementById('gasUrlInput');
-    const savedGasUrl = localStorage.getItem('gasAppUrl');
-    if (savedGasUrl) {
-      gasUrlInput.value = savedGasUrl;
-    }
-
-    document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-      // GAS設定の保存
-      const url = gasUrlInput.value.trim();
-      if (url) {
-        localStorage.setItem('gasAppUrl', url);
-        showToast('GAS連携URLを保存しました。');
-      } else {
-        localStorage.removeItem('gasAppUrl');
-        showToast('設定をクリアしました。');
-      }
-    });
-
-  </script>
+  }
+
+  function showScreen(name){
+    $$('.screen').forEach(el=>el.classList.toggle('active',el.id===name));
+    $$('.nav-btn').forEach(el=>el.classList.toggle('active',el.dataset.screen===name));
+    const labels={dashboard:'ダッシュボード / 今日の作業',create:'記事を作る / AI生成',materials:'人生素材 / 体験を保存',articles:'記事管理 / 下書き一覧',settings:'設定・接続 / Personal'};
+    $('#crumb').textContent=labels[name]||name;
+    $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show');
+    if(name==='materials') loadMaterials();
+    if(name==='articles') loadArticles();
+    if(name==='dashboard') loadDashboard();
+    if(name==='settings') loadStatus();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  $$('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showScreen(btn.dataset.screen)));
+  $$('[data-go]').forEach(btn=>btn.addEventListener('click',()=>showScreen(btn.dataset.go)));
+  $('#menuBtn').addEventListener('click',()=>{ $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('show'); });
+  $('#overlay').addEventListener('click',()=>{ $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); });
+
+  async function loadStatus(){
+    try{
+      const s=await call('getAppStatus');
+      $('#apiStatus').textContent=s.apiKeyConfigured?'設定済み':'未設定'; $('#apiStatus').className=s.apiKeyConfigured?'ok':'ng';
+      $('#sheetStatus').textContent=s.sheetReady?'接続済み':'未設定'; $('#sheetStatus').className=s.sheetReady?'ok':'ng';
+      $('#versionStatus').textContent='v'+s.version; $('#modelInput').value=s.model||''; $('#topModel').textContent=s.model||'モデル未設定';
+      if(s.spreadsheetUrl){ $('#sheetLink').href=s.spreadsheetUrl; $('#sheetLink').style.display='inline-flex'; }
+    }catch(e){ $('#apiStatus').textContent='確認失敗'; $('#apiStatus').className='ng'; $('#sheetStatus').textContent='確認失敗'; $('#sheetStatus').className='ng'; toast(e.message); }
+  }
+
+  async function loadDashboard(){
+    try{ const d=await call('getDashboardData'); $('#statMaterials').textContent=d.materials; $('#statArticles').textContent=d.articles; $('#statMonth').textContent=d.thisMonth; }
+    catch(e){ console.warn(e); }
+  }
+
+  function payload(action){
+    return {action,type:$('#type').value,framework:$('#framework').value,title:$('#title').value,theme:$('#theme').value,target:$('#target').value,pain:$('#pain').value,experience:$('#experience').value,message:$('#message').value,product:$('#product').value,tone:$('#tone').value,length:$('#length').value,cta:$('#cta').value,existingText:$('#existingText').value,privacy:'個人情報は必要に応じてぼかす'};
+  }
+
+  async function generate(action){
+    const data=payload(action);
+    if(!data.theme.trim()){toast('テーマを入力してください。');$('#theme').focus();return;}
+    setLoading(true); state.lastPayload=data;
+    try{
+      const res=await call('generateContent',data); state.result=res.text; state.lastModel=res.model||'';
+      $('#result').textContent=res.text; $('#resultMeta').textContent=`${res.model} / ${(res.elapsedMs/1000).toFixed(1)}秒 / ${new Date(res.generatedAt).toLocaleString('ja-JP')}`;
+      $('#copyBtn').disabled=false; $('#saveArticleBtn').disabled=false; toast('生成が完了しました。');
+    }catch(e){ $('#result').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>'; toast(e.message); }
+    finally{setLoading(false);}
+  }
+  function setLoading(flag){ $('#loader').classList.toggle('show',flag); ['#outlineBtn','#fullBtn','#rewriteBtn','#snsBtn'].forEach(s=>$(s).disabled=flag); }
+  $('#outlineBtn').addEventListener('click',()=>generate('outline')); $('#fullBtn').addEventListener('click',()=>generate('full')); $('#rewriteBtn').addEventListener('click',()=>generate('rewrite')); $('#snsBtn').addEventListener('click',()=>generate('sns'));
+  $('#copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(state.result);toast('コピーしました。');}catch(e){toast('コピーできませんでした。');}});
+  $('#clearBtn').addEventListener('click',()=>{state.result='';state.lastPayload=null;$('#result').innerHTML='<div class="empty">出力をクリアしました。</div>';$('#copyBtn').disabled=true;$('#saveArticleBtn').disabled=true;$('#resultMeta').textContent='生成前です。';});
+  $('#saveArticleBtn').addEventListener('click',async()=>{
+    if(!state.result||!state.lastPayload)return;
+    try{await call('saveArticle',{...state.lastPayload,body:state.result,model:state.lastModel,status:'下書き'});toast('記事管理へ保存しました。');loadDashboard();}
+    catch(e){toast(e.message);}
+  });
+
+  async function saveMaterial(){
+    const data={title:$('#matTitle').value,period:$('#matPeriod').value,category:$('#matCategory').value,detail:$('#matDetail').value,emotion:$('#matEmotion').value,lesson:$('#matLesson').value,privacy:$('#matPrivacy').value};
+    try{await call('saveMaterial',data);['#matTitle','#matPeriod','#matDetail','#matEmotion','#matLesson'].forEach(s=>$(s).value='');toast('人生素材を保存しました。');await loadMaterials();loadDashboard();}
+    catch(e){toast(e.message);}
+  }
+  $('#saveMaterialBtn').addEventListener('click',saveMaterial); $('#refreshMaterials').addEventListener('click',loadMaterials); $('#newMaterialBtn').addEventListener('click',()=>$('#matTitle').focus());
+
+  async function loadMaterials(){
+    try{state.materials=await call('listMaterials');renderMaterials();}
+    catch(e){$('#materialsList').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>';}
+  }
+  function renderMaterials(){
+    const root=$('#materialsList'); if(!state.materials.length){root.innerHTML='<div class="empty">まだ素材がありません。</div>';return;}
+    root.innerHTML=state.materials.map(m=>`<div class="item"><div class="item-head"><div><h4>${escapeHtml(m.title)}</h4><small>${escapeHtml(m.createdAt)} / ${escapeHtml(m.category)} / ${escapeHtml(m.privacy)}</small></div></div><div class="body">${escapeHtml(m.detail)}</div><div class="item-actions"><button class="btn soft mini" data-use-material="${escapeHtml(m.id)}">記事に使う</button><button class="btn ghost mini" data-view-material="${escapeHtml(m.id)}">全文を見る</button><button class="btn danger mini" data-delete-material="${escapeHtml(m.id)}">削除</button></div></div>`).join('');
+    $$('[data-use-material]').forEach(b=>b.addEventListener('click',()=>useMaterial(b.dataset.useMaterial)));
+    $$('[data-view-material]').forEach(b=>b.addEventListener('click',()=>viewMaterial(b.dataset.viewMaterial)));
+    $$('[data-delete-material]').forEach(b=>b.addEventListener('click',()=>removeMaterial(b.dataset.deleteMaterial)));
+  }
+  function materialText(m){return `【人生素材：${m.title}】\n時期：${m.period}\nカテゴリ：${m.category}\n出来事：${m.detail}\n感情：${m.emotion}\n学び・意味：${m.lesson}\n公開範囲：${m.privacy}`;}
+  function useMaterial(id){const m=state.materials.find(x=>x.id===id);if(!m)return;const current=$('#experience').value.trim();$('#experience').value=(current?current+'\n\n':'')+materialText(m);showScreen('create');toast('記事素材へ追加しました。');}
+  function viewMaterial(id){const m=state.materials.find(x=>x.id===id);if(!m)return;openModal(m.title,materialText(m));}
+  async function removeMaterial(id){if(!confirm('この人生素材を削除しますか？'))return;try{await call('deleteMaterial',id);toast('削除しました。');loadMaterials();loadDashboard();}catch(e){toast(e.message);}}
+  $('#loadMaterialBtn').addEventListener('click',async()=>{await loadMaterials();if(!state.materials.length){toast('先に人生素材を登録してください。');showScreen('materials');return;}openMaterialChooser();});
+  function openMaterialChooser(){
+    $('#modalTitle').textContent='記事に使う人生素材を選択';
+    $('#modalBody').innerHTML=state.materials.map(m=>`<div class="item" style="margin-bottom:10px"><h4>${escapeHtml(m.title)}</h4><small>${escapeHtml(m.period)} / ${escapeHtml(m.category)}</small><div class="item-actions"><button class="btn soft mini" data-modal-use="${escapeHtml(m.id)}">この素材を追加</button></div></div>`).join('');
+    $('#modal').classList.add('show'); $$('[data-modal-use]').forEach(b=>b.addEventListener('click',()=>{useMaterial(b.dataset.modalUse);closeModal();}));
+  }
+
+  async function loadArticles(){
+    try{state.articles=await call('listArticles',80);renderArticles();}
+    catch(e){$('#articlesList').innerHTML='<div class="empty">'+escapeHtml(e.message)+'</div>';}
+  }
+  function renderArticles(){
+    const root=$('#articlesList'); if(!state.articles.length){root.innerHTML='<div class="empty">まだ保存記事がありません。</div>';return;}
+    root.innerHTML=state.articles.map(a=>`<div class="item"><div class="item-head"><div><h4>${escapeHtml(a.title||a.theme)}</h4><small>${escapeHtml(a.createdAt)} / ${escapeHtml(a.type)} / ${escapeHtml(a.action)} / ${escapeHtml(a.model)}</small></div><span class="chip blue">${escapeHtml(a.status)}</span></div><div class="body">${escapeHtml(a.body.slice(0,500))}</div><div class="item-actions"><button class="btn soft mini" data-view-article="${escapeHtml(a.id)}">全文を見る</button><button class="btn ghost mini" data-copy-article="${escapeHtml(a.id)}">コピー</button><button class="btn danger mini" data-delete-article="${escapeHtml(a.id)}">削除</button></div></div>`).join('');
+    $$('[data-view-article]').forEach(b=>b.addEventListener('click',()=>viewArticle(b.dataset.viewArticle)));
+    $$('[data-copy-article]').forEach(b=>b.addEventListener('click',()=>copyArticle(b.dataset.copyArticle)));
+    $$('[data-delete-article]').forEach(b=>b.addEventListener('click',()=>removeArticle(b.dataset.deleteArticle)));
+  }
+  function viewArticle(id){const a=state.articles.find(x=>x.id===id);if(a)openModal(a.title||a.theme,a.body);}
+  async function copyArticle(id){const a=state.articles.find(x=>x.id===id);if(!a)return;try{await navigator.clipboard.writeText(a.body);toast('コピーしました。');}catch(e){toast('コピーできませんでした。');}}
+  async function removeArticle(id){if(!confirm('この記事を削除しますか？'))return;try{await call('deleteArticle',id);toast('削除しました。');loadArticles();loadDashboard();}catch(e){toast(e.message);}}
+  $('#refreshArticles').addEventListener('click',loadArticles);
+
+  $('#refreshStatus').addEventListener('click',loadStatus); $('#saveModelBtn').addEventListener('click',async()=>{try{const r=await call('updateModel',$('#modelInput').value);$('#topModel').textContent=r.model;toast('モデル設定を保存しました。');}catch(e){toast(e.message);}});
+  function openModal(title,body){$('#modalTitle').textContent=title;$('#modalBody').textContent=body;$('#modal').classList.add('show');}
+  function closeModal(){$('#modal').classList.remove('show');}
+  $('#modalClose').addEventListener('click',closeModal);$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+  if(!isGas){$('#topModel').textContent='ローカルプレビュー';$('#apiStatus').textContent='GASで開いてください';$('#apiStatus').className='ng';}
+  loadStatus(); loadDashboard();
+})();
+</script>
 </body>
 </html>
