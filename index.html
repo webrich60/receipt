@@ -2,437 +2,782 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>プロジェクトヒアリングシート</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>領収書・収支管理 - YUZU Production</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .hidden-step { display: none !important; }
+    body { font-family: 'Noto Sans JP', sans-serif; background:#eef2f7; overscroll-behavior-y:none; }
+    .app { max-width:430px; margin:0 auto; height:100vh; height:100dvh; background:#fff; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,.08); }
+    main { flex:1; overflow:auto; padding-bottom:90px; background:#f8fafc; }
+    .hidden-scroll::-webkit-scrollbar { display:none; }
+    .hidden-scroll { scrollbar-width:none; }
+    .tab-button.active { color:#4f46e5; font-weight:700; }
+    .period-button.active { background:#312e81; color:#fff; border-color:#312e81; }
+    .spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
+    .spinner-dark { border-color:rgba(79,70,229,.2); border-top-color:#4f46e5; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #toast { transition:.25s ease; z-index:100; }
+    .toast-hide { transform:translateY(-140%); opacity:0; }
+    .toast-show { transform:translateY(0); opacity:1; }
   </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            blue: { 50: '#eff6ff', 900: '#1e3a8a' },
-            cyan: { 400: '#22d3ee', 500: '#06b6d4' }
-          }
-        }
-      }
-    }
-  </script>
 </head>
-<body class="bg-white text-blue-900 font-sans antialiased pb-16 selection:bg-blue-900 selection:text-white">
-
-  <header class="max-w-4xl mx-auto px-4 pt-16 pb-8 text-center">
-    <div class="inline-flex items-center gap-2 bg-blue-900 text-white text-xs px-5 py-2 mb-6 font-black uppercase border-2 border-blue-900 shadow-[4px_4px_0_0_#1e3a8a]">
-      <i data-lucide="sparkles" class="w-4 h-4"></i> Requirements System
-    </div>
-    <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight">プロジェクト<br/>ヒアリングシート</h1>
-    <p class="font-bold text-sm max-w-2xl mx-auto border-t-4 border-blue-900 pt-6 mt-4">
-      ご依頼内容をお伺いし、最適な要件定義（仕様ドラフト）を構築・自動見積します。<br/>分かる範囲で構いませんので、リラックスしてご入力ください。
-    </p>
-  </header>
-
-  <div class="max-w-4xl mx-auto px-4 mb-10">
-    <div class="bg-white border-4 border-blue-900 p-5 shadow-[8px_8px_0_0_#1e3a8a] flex flex-col md:flex-row items-center gap-4">
-      <div class="flex items-center gap-4 w-full md:w-auto">
-        <div class="bg-blue-900 text-white text-xs font-black px-3 py-1.5 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Progress</div>
-        <div class="text-sm font-black">全 <span id="total-count"></span> 項目中 <span id="progress-count" class="text-2xl text-cyan-500 mx-1">0</span> 完了</div>
-      </div>
-      <div class="w-full flex-1 bg-blue-50 h-5 border-2 border-blue-900 relative">
-        <div id="progress-bar" class="bg-cyan-400 h-full border-r-2 border-blue-900 transition-all duration-500" style="width: 0%"></div>
-      </div>
-      <span id="progress-percent" class="text-xl font-black">0%</span>
-    </div>
+<body>
+<div class="app relative">
+  <div id="toast" class="toast-hide absolute top-4 left-4 right-4 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-2xl flex gap-3 items-center pointer-events-none">
+    <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 text-emerald-300"></i>
+    <span id="toastText" class="text-xs font-bold leading-relaxed"></span>
   </div>
 
-  <main class="max-w-4xl mx-auto px-4">
-    
-    <div id="step-form" class="grid lg:grid-cols-12 gap-8 items-start">
-      <div class="lg:col-span-4 space-y-6">
-        <div class="bg-white border-4 border-blue-900 p-5 shadow-[6px_6px_0_0_#1e3a8a]">
-          <h3 class="text-sm font-black uppercase border-b-2 border-blue-900 pb-2 mb-4">表示スタイル</h3>
-          <div class="grid gap-3">
-            <button onclick="setViewMode('step')" id="btn-mode-step" class="flex justify-center gap-2 py-3 border-2 border-blue-900 bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4] font-black text-sm transition-all"><i data-lucide="layers" class="w-4 h-4"></i> 1問ずつ回答</button>
-            <button onclick="setViewMode('all')" id="btn-mode-all" class="flex justify-center gap-2 py-3 border-2 border-blue-900 bg-white hover:shadow-[4px_4px_0_0_#1e3a8a] font-black text-sm transition-all"><i data-lucide="layout-grid" class="w-4 h-4"></i> 一括表示</button>
-          </div>
-        </div>
-        
-        <div class="bg-white border-4 border-blue-900 p-5 shadow-[6px_6px_0_0_#1e3a8a] hidden lg:block">
-          <h3 class="text-sm font-black uppercase border-b-2 border-blue-900 pb-2 mb-4">ヒアリング項目</h3>
-          <div id="nav-list" class="space-y-2"></div>
-        </div>
-        
-        <button onclick="resetData()" class="w-full bg-white border-4 border-blue-900 font-black py-4 flex justify-center gap-2 shadow-[6px_6px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> 入力をリセット</button>
+  <header class="h-14 shrink-0 bg-indigo-600 text-white px-4 flex items-center justify-between shadow-md z-10">
+    <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
+    </button>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理</h1>
+    <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
+  </header>
+
+  <main class="hidden-scroll">
+    <!-- 入力 -->
+    <section id="tab-scan" class="p-4 min-h-full">
+      <div id="scanStart" class="space-y-4 py-6">
+        <button id="cameraButton" class="w-full bg-white border-2 border-indigo-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-3 active:scale-[.98] transition">
+          <span class="p-4 rounded-full bg-indigo-50"><i data-lucide="camera" class="w-10 h-10 text-indigo-600"></i></span>
+          <span class="font-bold text-indigo-950">カメラで領収書を読み取る</span>
+          <span class="text-[11px] text-slate-400">APIキーはGAS側で安全に管理します</span>
+        </button>
+        <button id="galleryButton" class="w-full bg-white border border-slate-200 rounded-2xl p-4 font-bold text-sm text-slate-600 flex justify-center gap-2"><i data-lucide="image" class="w-5 h-5 text-indigo-500"></i>画像を選択</button>
+        <div class="flex items-center gap-3"><span class="h-px bg-slate-200 flex-1"></span><span class="text-[10px] text-slate-400">または</span><span class="h-px bg-slate-200 flex-1"></span></div>
+        <button id="manualButton" class="w-full bg-slate-100 border border-slate-200 rounded-2xl p-4 font-bold text-sm text-slate-600 flex justify-center gap-2"><i data-lucide="square-pen" class="w-5 h-5"></i>手動で収支を入力</button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+        <input id="galleryInput" type="file" accept="image/*" class="hidden">
       </div>
 
-      <div class="lg:col-span-8">
-        <div id="view-step" class="bg-white border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] animate-fade-in">
-          <div class="bg-blue-900 text-white p-6 md:p-8 flex items-start gap-4 border-b-4 border-blue-900">
-            <div id="step-icon-container" class="bg-white p-3 border-2 border-blue-900 text-blue-900 shadow-[4px_4px_0_0_#06b6d4]"></div>
-            <div>
-              <span id="step-counter" class="text-cyan-400 text-sm font-black block mb-2 tracking-widest uppercase"></span>
-              <h2 id="step-title" class="text-2xl font-black leading-tight"></h2>
-            </div>
-          </div>
-          <div class="p-6 md:p-8 space-y-6">
-            <label id="step-question" class="block text-lg font-black border-l-8 border-blue-900 pl-4 leading-relaxed"></label>
-            <div id="step-suggestions" class="space-y-3"></div>
-            <div class="relative mt-4">
-              <textarea id="step-textarea" oninput="handleInput(this.value)" class="w-full p-5 bg-blue-50 border-4 border-blue-900 font-bold focus:outline-none focus:shadow-[6px_6px_0_0_#06b6d4] transition-all min-h-[200px] text-base leading-relaxed" placeholder=""></textarea>
-              <div id="step-char-count" class="absolute bottom-4 right-4 text-xs bg-white px-2 py-1 border-2 border-blue-900 font-black"></div>
-            </div>
-            <div class="flex justify-between pt-8 mt-8 border-t-4 border-blue-900">
-              <button id="btn-prev" onclick="prevStep()" class="flex gap-2 px-6 py-4 font-black border-4 bg-white border-blue-900 shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="chevron-left" class="w-5 h-5"></i> BACK</button>
-              <button id="btn-next" onclick="nextStep()" class="flex gap-2 px-8 py-4 font-black border-4 border-blue-900 bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">NEXT <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
-              <button id="btn-to-preview" onclick="changeStep('preview')" class="hidden-step flex gap-2 px-8 py-4 font-black border-4 border-blue-900 bg-cyan-400 text-blue-900 shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">確認画面へ <i data-lucide="check-circle" class="w-5 h-5"></i></button>
-            </div>
-          </div>
+      <div id="imageArea" class="hidden py-3 space-y-4">
+        <div class="relative bg-slate-900 rounded-3xl overflow-hidden shadow-md"><img id="imagePreview" class="w-full h-60 object-contain"><button id="clearImageButton" class="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 space-y-3 shadow-sm">
+          <select id="ocrType" class="field"><option value="">種類はAI判定</option><option value="領収書">一般領収書</option><option value="医療費">医療費</option><option value="書類">その他書類</option></select>
+          <input id="ocrDate" type="date" class="field">
+          <input id="ocrPatient" type="text" class="field" placeholder="患者名（医療費のみ・任意）">
         </div>
+        <button id="ocrButton" class="primary-button"><i data-lucide="sparkles" class="w-5 h-5 text-emerald-300"></i><span>AIで読み取る（確認して保存）</span></button>
+      </div>
 
-        <div id="view-all" class="hidden-step space-y-8 animate-fade-in">
-          <div id="all-questions-container"></div>
-          <div class="text-center pt-6">
-            <button onclick="changeStep('preview')" class="bg-cyan-400 font-black py-5 px-12 border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex mx-auto gap-2 text-lg uppercase tracking-widest">回答内容を確認する <i data-lucide="check-circle" class="w-6 h-6"></i></button>
-          </div>
+      <div id="manualArea" class="hidden py-3">
+        <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-sm flex gap-2 items-center"><span class="p-2 rounded-lg bg-indigo-100 text-indigo-600"><i data-lucide="square-pen" class="w-5 h-5"></i></span>手動入力</h2><button id="cancelManualButton" class="text-xs font-bold px-3 py-1.5 bg-slate-200 rounded-full">戻る</button></div>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+          <label class="label">種類<select id="manualType" class="field mt-1"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入・入金</option><option value="書類">その他支出</option></select></label>
+          <label class="label">日付<input id="manualDate" type="date" class="field mt-1"></label>
+          <label class="label"><span id="storeLabel">店舗・支払先</span><input id="manualStore" class="field mt-1" placeholder="例：スーパー、病院、取引先"></label>
+          <label id="patientWrap" class="label hidden">患者名<input id="manualPatient" class="field mt-1"></label>
+          <label class="label">金額<input id="manualAmount" type="number" min="1" class="field mt-1" placeholder="0"></label>
+          <label class="label">カテゴリ<select id="manualCategory" class="field mt-1"></select></label>
+          <label class="label">内容・摘要<input id="manualItems" class="field mt-1" placeholder="任意"></label>
+        </div>
+        <button id="saveManualButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>保存する</span></button>
+      </div>
+
+      <div id="savedArea" class="hidden py-12 text-center">
+        <div class="bg-white rounded-3xl border border-slate-100 p-7 shadow-sm"><span class="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check" class="w-8 h-8"></i></span><h2 class="font-bold text-lg mt-4">保存しました</h2><p id="savedPlace" class="text-xs text-slate-400 mt-1"></p><button id="continueButton" class="mt-6 w-full py-3.5 bg-indigo-50 text-indigo-700 font-bold rounded-xl">続けて入力</button></div>
+      </div>
+    </section>
+
+    <!-- 履歴 -->
+    <section id="tab-history" class="hidden p-4 min-h-full">
+      <div class="grid grid-cols-3 gap-2 mb-3">
+        <button class="period-button active border rounded-xl py-2 text-xs font-bold bg-white" data-period="day">今日</button>
+        <button class="period-button border rounded-xl py-2 text-xs font-bold bg-white" data-period="week">今週</button>
+        <button class="period-button border rounded-xl py-2 text-xs font-bold bg-white" data-period="month">今月</button>
+      </div>
+
+      <div class="bg-indigo-600 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 mb-4">
+        <p id="summaryTitle" class="text-[11px] text-indigo-100 font-bold">今日の収支</p>
+        <div class="grid grid-cols-3 gap-2 mt-4">
+          <div class="rounded-2xl bg-indigo-700/50 border border-indigo-400/30 p-3"><p class="text-[10px] text-indigo-200">収入</p><p id="summaryIncome" class="text-sm font-black mt-1">¥0</p></div>
+          <div class="rounded-2xl bg-indigo-700/50 border border-indigo-400/30 p-3"><p class="text-[10px] text-indigo-200">支出</p><p id="summaryExpense" class="text-sm font-black mt-1">¥0</p></div>
+          <div class="rounded-2xl bg-white/15 border border-white/20 p-3"><p class="text-[10px] text-indigo-100">差引</p><p id="summaryBalance" class="text-sm font-black mt-1">¥0</p></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-3 text-center text-[10px]">
+          <div class="bg-black/10 rounded-xl py-2">一般 <b id="summaryGeneral" class="block text-xs">¥0</b></div>
+          <div class="bg-black/10 rounded-xl py-2">医療 <b id="summaryMedical" class="block text-xs">¥0</b></div>
+          <div class="bg-black/10 rounded-xl py-2">固定 <b id="summaryFixed" class="block text-xs">¥0</b></div>
         </div>
       </div>
-    </div>
 
-    <div id="step-preview" class="hidden-step bg-white border-4 border-blue-900 shadow-[12px_12px_0_0_#1e3a8a] max-w-4xl mx-auto animate-fade-in">
-      <div class="bg-blue-900 text-white p-6 md:p-8 flex flex-col md:flex-row justify-between md:items-center gap-4 border-b-4 border-blue-900">
-        <h2 class="text-2xl font-black flex items-center gap-3"><i data-lucide="check-circle" class="w-8 h-8 text-cyan-400"></i> 回答内容の確認</h2>
-        <button onclick="changeStep('form')" class="bg-white text-blue-900 border-2 border-blue-900 px-6 py-3 font-black shadow-[4px_4px_0_0_#06b6d4] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all text-sm">編集に戻る</button>
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-slate-600 flex gap-1"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>期間別の推移</h3><button id="refreshHistoryButton" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 rounded-full px-3 py-1.5">更新</button></div><div id="trendList" class="space-y-2"></div></div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳</h3><div id="categoryList" class="space-y-3"></div></div>
+
+
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4 space-y-3">
+        <div class="flex items-center justify-between"><h3 class="text-xs font-bold text-slate-600 flex items-center gap-1"><i data-lucide="search" class="w-4 h-4"></i>履歴を検索・期間指定</h3><span id="historyCount" class="text-[10px] font-bold text-indigo-600">0件</span></div>
+        <input id="historySearch" class="field" placeholder="店舗名・カテゴリ・内容で検索">
+        <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">開始日<input id="historyFrom" type="date" class="field mt-1"></label><label class="text-[10px] font-bold text-slate-400">終了日<input id="historyTo" type="date" class="field mt-1"></label></div>
+        <button id="clearHistoryFilter" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-[11px] font-bold text-slate-600">検索条件をクリア</button>
       </div>
-      <div class="p-6 md:p-10 space-y-6">
-        <div id="preview-list" class="space-y-6 max-h-[500px] overflow-y-auto pr-4"></div>
-        <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t-4 border-blue-900">
-          <button onclick="copyAnswers()" id="btn-copy-answers" class="flex-1 bg-white font-black py-5 border-4 border-blue-900 shadow-[4px_4px_0_0_#1e3a8a] flex justify-center items-center gap-2 text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"><i data-lucide="copy" class="w-5 h-5"></i> 手元に控えをコピー</button>
-          <button onclick="submitData()" class="flex-1 bg-cyan-400 text-blue-900 font-black py-5 border-4 border-blue-900 shadow-[6px_6px_0_0_#1e3a8a] flex justify-center items-center gap-2 text-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all uppercase tracking-widest"><i data-lucide="send" class="w-5 h-5"></i> 担当者へ送信する</button>
-        </div>
+
+      <div class="flex gap-2 overflow-auto hidden-scroll mb-3 pb-1">
+        <button class="filter-button active bg-slate-900 text-white" data-filter="all">すべて</button>
+        <button class="filter-button" data-filter="収入用">収入</button>
+        <button class="filter-button" data-filter="一般用">一般</button>
+        <button class="filter-button" data-filter="医療費用">医療</button>
+        <button class="filter-button" data-filter="固定支払">固定</button>
       </div>
-    </div>
+      <div id="historyLoading" class="hidden py-16 text-center text-slate-400"><div class="spinner spinner-dark mx-auto"></div><p class="text-xs mt-3">履歴を読み込み中</p></div>
+      <div id="historyList" class="space-y-3"></div>
+      <button id="moreButton" class="hidden w-full mt-3 mb-6 bg-white border border-slate-200 rounded-xl py-3 text-xs font-bold">もっと見る</button>
+    </section>
 
-    <div id="step-status" class="hidden-step bg-white border-4 border-blue-900 shadow-[12px_12px_0_0_#1e3a8a] p-12 md:p-16 text-center max-w-2xl mx-auto animate-fade-in mt-10">
-      <div id="status-icon" class="w-24 h-24 border-4 border-blue-900 flex items-center justify-center mx-auto mb-8"></div>
-      <h2 id="status-heading" class="text-3xl font-black mb-4 uppercase tracking-widest"></h2>
-      <p id="status-message" class="font-bold text-base leading-relaxed mb-10 pb-6 border-b-2 border-gray-200"></p>
-      <button id="status-btn" onclick="resetToHome()" class="bg-cyan-400 font-black py-4 px-12 border-4 border-blue-900 shadow-[6px_6px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all uppercase tracking-widest">戻る</button>
-    </div>
+    <!-- 固定支払 -->
+    <section id="tab-fixed" class="hidden p-4 min-h-full">
+      <h2 class="font-bold text-sm flex gap-2 items-center mb-4"><span class="p-2 rounded-lg bg-amber-100 text-amber-600"><i data-lucide="calendar-clock" class="w-5 h-5"></i></span>固定支払の登録</h2>
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+        <label class="label">支払項目<select id="fixedItem" class="field mt-1"></select></label>
+        <label id="newFixedWrap" class="label hidden">新しい項目名<input id="newFixedItem" class="field mt-1" placeholder="例：サブスク代"></label>
+        <label class="label">金額<input id="fixedAmount" type="number" min="1" class="field mt-1"></label>
+        <label class="label">支払日<input id="fixedDate" type="date" class="field mt-1"></label>
+      </div>
+      <button id="saveFixedButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>固定支払を記録</span></button>
+    </section>
 
+    <!-- 設定・取込 -->
+    <section id="tab-settings" class="hidden p-4 min-h-full">
+      <h2 class="font-bold text-sm mb-4">システム設定</h2>
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
+        <div id="statusBox" class="text-xs font-bold leading-relaxed p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950"></div>
+        <label class="label">GASウェブアプリURL<input id="gasUrl" class="field mt-1" placeholder="https://script.google.com/macros/s/.../exec"></label>
+        <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>設定を保存・初期化</button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
+        <div><h3 class="font-bold text-sm flex gap-2"><i data-lucide="file-up" class="w-5 h-5 text-indigo-600"></i>過去データを取り込む</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">CSV・Excel（.xlsx/.xls）または、同じGoogleアカウントで開けるスプレッドシートから取り込めます。見出し名と旧7列形式を自動判定します。</p></div>
+        <input id="importFile" type="file" accept=".csv,.xlsx,.xls" class="block w-full text-xs file:mr-3 file:py-2.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-bold">
+        <button id="importFileButton" class="w-full border border-indigo-200 text-indigo-700 bg-indigo-50 rounded-xl py-3 text-xs font-bold">ファイルから取り込む</button>
+        <div class="flex items-center gap-2"><span class="h-px bg-slate-200 flex-1"></span><span class="text-[10px] text-slate-400">または</span><span class="h-px bg-slate-200 flex-1"></span></div>
+        <input id="importSheetUrl" class="field" placeholder="過去のGoogleスプレッドシートURL">
+        <button id="importSheetButton" class="w-full border border-slate-200 bg-slate-50 rounded-xl py-3 text-xs font-bold">Googleスプレッドシートから取り込む</button>
+        <div id="importResult" class="hidden text-xs rounded-xl p-3 bg-emerald-50 text-emerald-800 border border-emerald-100"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4">
+        <div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>安全管理・メンテナンス</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">バックアップ作成、列ズレ点検、削除データの復元ができます。</p></div>
+        <button id="backupButton" class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl py-3 text-xs font-bold">現在のスプレッドシートをバックアップ</button>
+        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">列構成を点検・修復</button>
+        <div id="maintenanceResult" class="hidden text-xs rounded-xl p-3 bg-slate-50 text-slate-700 border border-slate-200 leading-relaxed"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4 mb-8">
+        <div class="flex justify-between items-center"><div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="archive-restore" class="w-5 h-5 text-indigo-600"></i>削除済みデータ</h3><p class="text-[10px] text-slate-400 mt-1">直近100件まで確認・復元できます。</p></div><button id="refreshDeletedButton" class="text-[10px] font-bold bg-indigo-50 text-indigo-600 rounded-full px-3 py-1.5">更新</button></div>
+        <div id="deletedList" class="space-y-2"><p class="text-xs text-slate-400 text-center py-4">設定保存後に表示されます</p></div>
+      </div>
+    </section>
   </main>
 
-  <script>
-    // =========================================================
-    // ⚙️ バックエンド通信設定
-    // =========================================================
-    const CONFIG = {
-      // 接続するGASウェブアプリURL（秘密情報やメールアドレスはすべてGAS側の金庫で安全に管理されています）
-      GAS_URL: "https://script.google.com/macros/s/AKfycbztnrbX_F30l1C5ZCjWK5Q3IWcIpoLgwGRsdlCUaBeDVn-Lo_GQYSMLIkYw35YrV41f/exec"
-    };
-    // =========================================================
+  <nav class="absolute bottom-0 w-full h-16 bg-white border-t border-slate-100 flex z-20">
+    <button class="tab-button active flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="scan"><i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px]">入力</span></button>
+    <button class="tab-button flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="history"><i data-lucide="chart-column" class="w-5 h-5"></i><span class="text-[10px]">収支</span></button>
+    <button class="tab-button flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="fixed"><i data-lucide="credit-card" class="w-5 h-5"></i><span class="text-[10px]">固定支払</span></button>
+  </nav>
+</div>
 
-    // データ定義（純粋なヒアリング項目のみ）
-    const questions = [
-      { id: 'desired_tool', category: '希望するツール・アプリ', icon: 'lightbulb', text: 'どのようなツールやアプリを作成したいですか？', placeholder: '例：営業スタッフ向けの経費精算アプリなど', suggestions: ['社内向け顧客管理(CRM)Webシステム', '営業スタッフ向けの経費精算スマートフォンアプリ', '自動データ収集・集計を行うスクレイピングツール'] },
-      { id: 'purpose', category: '利用目的・解決したい課題', icon: 'target', text: 'そのツールを作る目的は何ですか？どのような課題を解決したいですか？', placeholder: '例：毎月の経費入力作業が手間で自動化したい。', suggestions: ['手作業による転記作業・ヒューマンエラーを削減したい', '外出先からリアルタイムで情報を入力・共有できるようにしたい', '紙やExcelでの管理から脱却したい'] },
-      { id: 'target', category: '想定する使用者', icon: 'users', text: '主に誰がこのツールを使いますか？', placeholder: '例：自社の営業部員', suggestions: ['自社の営業・現場スタッフ', '社内の管理部門・バックオフィス担当者', '一般の消費者・エンドユーザー'] },
-      { id: 'core_features', category: '機能要件 (Must)', icon: 'settings', text: '「これだけは絶対に外せない」というコア機能は何ですか？', placeholder: '例：写真アップロード機能、承認フロー', suggestions: ['Googleログインなど、安全なユーザー認証', 'CSV / Excelファイルのインポート・エクスポート機能', 'カメラを使った画像アップロード機能'] },
-      { id: 'nice_to_have', category: '機能要件 (Want)', icon: 'check-circle', text: '「できれば欲しい」という追加機能はありますか？', placeholder: '例：Slackへの通知', suggestions: ['Slack / LINE 等への自動通知連携', 'データの自動集計グラフ表示機能', '多言語対応'] },
-      { id: 'environment', category: '利用環境', icon: 'monitor', text: 'どのデバイス、環境で利用しますか？', placeholder: '例：iPhoneとAndroidアプリ。', suggestions: ['マルチデバイス対応のWebアプリ', 'スマートフォン専用アプリ（iOS / Android）', 'Googleスプレッドシート ＋ GAS'] },
-      { id: 'schedule', category: '予算・納期', icon: 'calendar', text: '希望する予算感と、いつまでに必要か教えてください。', placeholder: '例：300万円以内、10月末まで', suggestions: ['開発予算：100万〜200万円程度 / 納期：3ヶ月以内', '最小限を低予算（〜50万円）＆短期間（1ヶ月）で作りたい', '時期・予算は要相談'] }
-    ];
 
-    // 状態管理
-    let state = {
-      answers: JSON.parse(localStorage.getItem('hearing_answers') || '{}'),
-      activeIdx: 0,
-      mode: 'step',
-      step: 'form'
-    };
+<!-- AI読取結果確認モーダル -->
+<div id="ocrConfirmModal" class="hidden fixed inset-0 z-50 bg-black/60 p-4 items-center justify-center">
+  <div class="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[90vh] overflow-auto">
+    <div class="flex justify-between items-center mb-2"><h3 class="font-bold flex items-center gap-2"><i data-lucide="scan-text" class="w-5 h-5 text-indigo-600"></i>AI読取結果を確認</h3><button onclick="closeOcrConfirm()"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <p class="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4">金額・日付・店舗名を確認してから保存してください。AIもたまにレシートより自信満々です。</p>
+    <div class="space-y-3">
+      <select id="ocrConfirmType" class="field"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入</option><option value="書類">その他支出</option></select>
+      <input id="ocrConfirmDate" type="date" class="field">
+      <input id="ocrConfirmStore" class="field" placeholder="店舗・支払先・収入元">
+      <input id="ocrConfirmPatient" class="field" placeholder="患者名（医療費のみ）">
+      <input id="ocrConfirmAmount" type="number" min="1" class="field" placeholder="金額">
+      <select id="ocrConfirmCategory" class="field"></select>
+      <input id="ocrConfirmItems" class="field" placeholder="内容・摘要">
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeOcrConfirm()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">戻って撮り直す</button><button id="saveOcrConfirmButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold flex justify-center items-center gap-2">確認して保存</button></div>
+  </div>
+</div>
 
-    // 初期化
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('total-count').innerText = questions.length;
-      renderNav();
-      renderStep();
-      renderAll();
-      updateProgress();
-      lucide.createIcons();
+<!-- 編集モーダル -->
+<div id="editModal" class="hidden fixed inset-0 z-50 bg-black/60 p-4 items-center justify-center">
+  <div class="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[90vh] overflow-auto">
+    <div class="flex justify-between items-center mb-4"><h3 class="font-bold">データ修正</h3><button onclick="closeEdit()"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <input id="editRecordId" type="hidden"><input id="editSheet" type="hidden">
+    <div class="space-y-3">
+      <select id="editType" class="field"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入</option><option value="書類">その他支出</option></select>
+      <input id="editDate" type="date" class="field"><input id="editStore" class="field" placeholder="店舗・支払先・収入元"><input id="editPatient" class="field" placeholder="患者名"><input id="editAmount" type="number" class="field"><input id="editCategory" class="field" placeholder="カテゴリ"><input id="editItems" class="field" placeholder="内容・摘要">
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeEdit()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">キャンセル</button><button id="saveEditButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold">保存</button></div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const classes = {
+    field: 'w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500',
+    label: 'block text-xs font-bold text-slate-500',
+    primary: 'w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-500/20 flex justify-center items-center gap-2 active:scale-[.98] transition',
+    filter: 'filter-button whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600'
+  };
+  document.querySelectorAll('.field').forEach(el => el.className += ' ' + classes.field);
+  document.querySelectorAll('.label').forEach(el => el.className += ' ' + classes.label);
+  document.querySelectorAll('.primary-button').forEach(el => el.className += ' ' + classes.primary);
+  document.querySelectorAll('.filter-button').forEach(el => el.className += ' ' + classes.filter);
+
+  let allHistory = [];
+  let analytics = { periods:{ day:emptySummary(), week:emptySummary(), month:emptySummary() }, trends:{ daily:[], weekly:[], monthly:[] } };
+  let currentPeriod = 'day';
+  let currentFilter = 'all';
+  let displayCount = 12;
+  let imageData = '';
+  let imageMime = '';
+  let pendingOcrData = null;
+
+  const expenseCategories = ['食費','外食','日用品','消耗品費','交通費','通信費','接待交際費','診療・治療','医薬品購入','固定費','その他'];
+  const incomeCategories = ['売上','給与','年金','給付金','返金','その他収入'];
+
+  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, count:0 }; }
+  function money(v){ return '¥' + Number(v || 0).toLocaleString(); }
+  function todayString(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function connected(){ return /^https:\/\/script\.google\.com\//.test(localStorage.getItem('yuzuGasUrl') || ''); }
+  function escapeHtml(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  function toast(message, error=false){
+    $('toastText').textContent = message;
+    $('toast').classList.toggle('bg-red-600', error);
+    $('toast').classList.toggle('bg-slate-900', !error);
+    $('toastIcon').setAttribute('data-lucide', error ? 'circle-alert' : 'check-circle');
+    $('toastIcon').className = `w-5 h-5 ${error ? 'text-red-100' : 'text-emerald-300'}`;
+    lucide.createIcons();
+    $('toast').classList.remove('toast-hide');
+    $('toast').classList.add('toast-show');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => {
+      $('toast').classList.add('toast-hide');
+      $('toast').classList.remove('toast-show');
+    }, 3800);
+  }
+
+  async function api(payload){
+    if(!connected()) throw new Error('GASウェブアプリURLが未設定です。設定画面で登録してください。');
+    const response = await fetch(localStorage.getItem('yuzuGasUrl'), {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
     });
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); }
+    catch(e) { throw new Error('GASから正しいJSONが返りません。最新バージョンの再デプロイを確認してください。'); }
+    if(!result.success) throw Object.assign(new Error(result.error || '処理に失敗しました。'), { result });
+    return result;
+  }
 
-    // 状態更新＆ローカルストレージ保存
-    function setAnswer(id, val) {
-      state.answers[id] = val;
-      localStorage.setItem('hearing_answers', JSON.stringify(state.answers));
-      updateProgress();
-      renderNav();
-      
-      if (state.mode === 'step') {
-        document.getElementById('step-textarea').value = val;
-        document.getElementById('step-char-count').innerText = `文字数: ${val.length}`;
-      } else {
-        document.getElementById(`textarea-${id}`).value = val;
-        document.getElementById(`char-count-${id}`).innerText = `文字数: ${val.length}`;
+  async function withButton(button, working, fn){
+    const old = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<span class="spinner"></span><span>${escapeHtml(working)}</span>`;
+    try { return await fn(); }
+    finally { button.disabled = false; button.innerHTML = old; lucide.createIcons(); }
+  }
+
+  function updateMode(){
+    const ok = connected();
+    $('modeText').textContent = ok ? '本番運用中' : 'GAS未設定';
+    $('modeButton').classList.toggle('bg-emerald-700/70', ok);
+    $('modeButton').classList.toggle('bg-red-700/70', !ok);
+    $('statusBox').innerHTML = ok
+      ? '<strong>本番運用モード</strong>です。登録・修正・削除・集計はGoogleスプレッドシートと同期します。削除データは「削除済み」シートへ退避されます。'
+      : '<strong class="text-red-600">GAS URLが未設定です。</strong><br>誤って端末内だけへ保存することはありません。URLを設定するまで登録操作は停止します。';
+    $('savedPlace').textContent = ok ? 'Googleスプレッドシートに保存されました' : '保存先が未設定です';
+  }
+
+  window.switchTab = function(name){
+    ['scan','history','fixed','settings'].forEach(x => $('tab-'+x).classList.toggle('hidden', x !== name));
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    if(name === 'history') loadHistory();
+    if(name === 'settings' && connected()) loadDeleted();
+  };
+  document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  function resetInput(){
+    $('scanStart').classList.remove('hidden');
+    $('manualArea').classList.add('hidden');
+    $('imageArea').classList.add('hidden');
+    $('savedArea').classList.add('hidden');
+    imageData = '';
+    imageMime = '';
+    pendingOcrData = null;
+    $('cameraInput').value = '';
+    $('galleryInput').value = '';
+  }
+  $('manualButton').onclick = () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    $('scanStart').classList.add('hidden');
+    $('manualArea').classList.remove('hidden');
+    $('manualDate').value = todayString();
+    updateManualType();
+  };
+  $('cancelManualButton').onclick = resetInput;
+  $('continueButton').onclick = resetInput;
+  $('cameraButton').onclick = () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    $('cameraInput').click();
+  };
+  $('galleryButton').onclick = () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    $('galleryInput').click();
+  };
+  $('clearImageButton').onclick = resetInput;
+  ['cameraInput','galleryInput'].forEach(id => $(id).addEventListener('change', readImage));
+
+  function readImage(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')) return toast('画像ファイルを選択してください。', true);
+    if(file.size > 12 * 1024 * 1024) return toast('画像が大きすぎます。12MB以下にしてください。', true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      imageData = reader.result.split(',')[1];
+      imageMime = file.type;
+      $('imagePreview').src = reader.result;
+      $('scanStart').classList.add('hidden');
+      $('imageArea').classList.remove('hidden');
+      $('ocrDate').value = todayString();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function fillCategories(select, type, selected=''){
+    const list = type === '収入' ? incomeCategories : expenseCategories;
+    select.innerHTML = list.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+    if(selected && !list.includes(selected)) select.innerHTML += `<option value="${escapeHtml(selected)}">${escapeHtml(selected)}</option>`;
+    select.value = selected || list[0];
+  }
+  function updateManualType(){
+    const type = $('manualType').value;
+    $('patientWrap').classList.toggle('hidden', type !== '医療費');
+    $('storeLabel').textContent = type === '収入' ? '収入元・入金元' : '店舗・支払先';
+    fillCategories($('manualCategory'), type);
+  }
+  $('manualType').onchange = updateManualType;
+
+  async function saveRecord(data, force=false){
+    if(!data.date || !data.store || !(Number(data.amount) > 0)) throw new Error('日付、支払先（収入元）、1円以上の金額を入力してください。');
+    try { return await api({ action:'upload_text', data, force }); }
+    catch(e) {
+      if(e.result && e.result.duplicate) {
+        e.duplicate = true;
+        e.existingDate = e.result.existingDate || '';
       }
+      throw e;
     }
+  }
 
-    function handleInput(val) { setAnswer(questions[state.activeIdx].id, val); }
-    function handleAllInput(id, val) { setAnswer(id, val); }
-    
-    function insertText(text) {
-      const id = questions[state.activeIdx].id;
-      const current = state.answers[id] || '';
-      setAnswer(id, current ? current + '\n' + text : text);
+  async function saveWithDuplicateCheck(data){
+    try { return await saveRecord(data, false); }
+    catch(e) {
+      if(!e.duplicate) throw e;
+      const dateText = e.existingDate || '同じ月';
+      if(!confirm(`${dateText}に同じ支払先・金額があります。重複して保存しますか？`)) return null;
+      return await saveRecord(data, true);
     }
-    
-    function insertTextAll(id, text) {
-      const current = state.answers[id] || '';
-      setAnswer(id, current ? current + '\n' + text : text);
-    }
+  }
 
-    // 画面遷移
-    function changeStep(newStep) {
-      state.step = newStep;
-      document.getElementById('step-form').classList.add('hidden-step');
-      document.getElementById('step-preview').classList.add('hidden-step');
-      document.getElementById('step-status').classList.add('hidden-step');
+  $('saveManualButton').onclick = () => withButton($('saveManualButton'), '保存中...', async () => {
+    const data = {
+      type:$('manualType').value,
+      date:$('manualDate').value,
+      store:$('manualStore').value.trim(),
+      amount:Number($('manualAmount').value),
+      category:$('manualCategory').value,
+      items:$('manualItems').value.trim() || '-',
+      patientName:$('manualPatient').value.trim()
+    };
+    try {
+      const result = await saveWithDuplicateCheck(data);
+      if(result) showSaved();
+    } catch(e) { toast(e.message, true); }
+  });
 
-      if (newStep === 'form') {
-        document.getElementById('step-form').classList.remove('hidden-step');
-        renderNav();
-      } else if (newStep === 'preview') {
-        renderPreview();
-        document.getElementById('step-preview').classList.remove('hidden-step');
-      } else {
-        document.getElementById('step-status').classList.remove('hidden-step');
-        renderStatus(newStep);
-      }
-    }
+  function showSaved(){
+    $('manualArea').classList.add('hidden');
+    $('imageArea').classList.add('hidden');
+    $('savedArea').classList.remove('hidden');
+    toast('スプレッドシートに保存しました。');
+  }
 
-    function setViewMode(mode) {
-      state.mode = mode;
-      document.getElementById('btn-mode-step').className = `flex justify-center gap-2 py-3 border-2 border-blue-900 font-black text-sm transition-all ${mode === 'step' ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:shadow-[4px_4px_0_0_#1e3a8a]'}`;
-      document.getElementById('btn-mode-all').className = `flex justify-center gap-2 py-3 border-2 border-blue-900 font-black text-sm transition-all ${mode === 'all' ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:shadow-[4px_4px_0_0_#1e3a8a]'}`;
-      
-      if(mode === 'step') {
-        document.getElementById('view-step').classList.remove('hidden-step');
-        document.getElementById('view-all').classList.add('hidden-step');
-        renderStep();
-      } else {
-        document.getElementById('view-step').classList.add('hidden-step');
-        document.getElementById('view-all').classList.remove('hidden-step');
-      }
-      renderNav();
-    }
-
-    function prevStep() { if (state.activeIdx > 0) { state.activeIdx--; renderStep(); renderNav(); } }
-    function nextStep() { if (state.activeIdx < questions.length - 1) { state.activeIdx++; renderStep(); renderNav(); } }
-
-    // レンダリング系
-    function renderStep() {
-      const q = questions[state.activeIdx];
-      const ans = state.answers[q.id] || '';
-      
-      document.getElementById('step-icon-container').innerHTML = `<i data-lucide="${q.icon}" class="w-6 h-6"></i>`;
-      document.getElementById('step-counter').innerText = `Question ${state.activeIdx + 1} / ${questions.length}`;
-      document.getElementById('step-title').innerText = q.category;
-      document.getElementById('step-question').innerText = q.text;
-      
-      let sugHtml = '<div class="flex gap-2 flex-wrap mt-2">';
-      q.suggestions.forEach(s => {
-        sugHtml += `<button onclick="insertText('${s}')" class="text-xs bg-white border-2 border-blue-900 px-3 py-2 font-bold hover:bg-blue-900 hover:text-white transition-all shadow-[2px_2px_0_0_#0f172a]">+ ${s}</button>`;
-      });
-      sugHtml += '</div>';
-      document.getElementById('step-suggestions').innerHTML = sugHtml;
-      
-      const ta = document.getElementById('step-textarea');
-      ta.placeholder = q.placeholder;
-      ta.value = ans;
-      document.getElementById('step-char-count').innerText = `文字数: ${ans.length}`;
-
-      document.getElementById('btn-prev').disabled = state.activeIdx === 0;
-      document.getElementById('btn-prev').className = `flex gap-2 px-6 py-4 font-black border-4 ${state.activeIdx === 0 ? 'border-gray-200 text-gray-400 bg-gray-50' : 'border-blue-900 bg-white shadow-[4px_4px_0_0_#1e3a8a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'} transition-all`;
-      
-      if (state.activeIdx === questions.length - 1) {
-        document.getElementById('btn-next').classList.add('hidden-step');
-        document.getElementById('btn-to-preview').classList.remove('hidden-step');
-      } else {
-        document.getElementById('btn-next').classList.remove('hidden-step');
-        document.getElementById('btn-to-preview').classList.add('hidden-step');
-      }
-      lucide.createIcons();
-    }
-
-    function renderAll() {
-      let html = '';
-      questions.forEach((q, idx) => {
-        const ans = state.answers[q.id] || '';
-        html += `
-        <div class="bg-white border-4 border-blue-900 shadow-[8px_8px_0_0_#1e3a8a] p-6 md:p-8 mb-8 transition-all focus-within:shadow-[8px_8px_0_0_#06b6d4]">
-          <h3 class="text-xl font-black mb-5 flex items-center gap-3"><span class="bg-blue-900 text-white p-2 border-2 border-blue-900"><i data-lucide="${q.icon}"></i></span> Q${idx+1}. ${q.category}</h3>
-          <p class="font-bold border-l-4 border-blue-900 pl-3 mb-5 leading-relaxed">${q.text}</p>
-          <div class="flex flex-wrap gap-2 mb-5">
-            ${q.suggestions.map(s => `<button onclick="insertTextAll('${q.id}', '${s}')" class="text-xs border-2 border-blue-900 px-3 py-2 bg-white font-bold hover:bg-blue-900 hover:text-white shadow-[2px_2px_0_0_#1e3a8a] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none">+ ${s}</button>`).join('')}
-          </div>
-          <div class="relative">
-            <textarea id="textarea-${q.id}" oninput="handleAllInput('${q.id}', this.value)" class="w-full p-5 bg-blue-50 border-4 border-blue-900 focus:outline-none focus:shadow-[4px_4px_0_0_#06b6d4] font-bold min-h-[150px] transition-all" placeholder="${q.placeholder}">${ans}</textarea>
-            <div id="char-count-${q.id}" class="absolute bottom-4 right-4 text-xs bg-white px-2 py-1 border-2 border-blue-900 font-black">文字数: ${ans.length}</div>
-          </div>
-        </div>`;
-      });
-      document.getElementById('all-questions-container').innerHTML = html;
-    }
-
-    function renderNav() {
-      let html = '';
-      questions.forEach((q, idx) => {
-        const isAns = !!(state.answers[q.id] && state.answers[q.id].trim() !== '');
-        const isAct = state.mode === 'step' && state.activeIdx === idx;
-        const btnClass = isAct ? 'bg-blue-900 text-white shadow-[4px_4px_0_0_#06b6d4]' : 'bg-white hover:border-blue-900';
-        const circleClass = isAns ? 'bg-cyan-400 text-blue-900 border-blue-900' : (isAct ? 'bg-blue-900 border-white' : 'bg-white border-blue-900');
-        
-        html += `
-        <button onclick="state.activeIdx=${idx}; setViewMode('step');" class="w-full text-left p-3 flex items-center gap-3 font-black border-2 transition-all ${btnClass}">
-          <div class="w-6 h-6 flex items-center justify-center text-xs border-2 ${circleClass}">${isAns ? '✓' : idx+1}</div>
-          <span class="truncate">${q.category}</span>
-        </button>`;
-      });
-      document.getElementById('nav-list').innerHTML = html;
-    }
-
-    function renderPreview() {
-      let html = '';
-      questions.forEach((q, idx) => {
-        const ans = state.answers[q.id];
-        const hasAns = ans && ans.trim() !== '';
-        html += `
-        <div class="bg-white border-2 border-blue-900 p-6 shadow-[4px_4px_0_0_#1e3a8a]">
-          <div class="flex items-center justify-between border-b-2 border-gray-100 pb-3 mb-4">
-            <span class="font-black text-sm flex items-center gap-2"><span class="bg-blue-900 text-white px-3 py-1">Q${idx+1}</span>${q.category}</span>
-            <button onclick="state.activeIdx=${idx}; setViewMode('step'); changeStep('form');" class="text-xs bg-gray-100 border-2 border-blue-900 px-3 py-1 font-black hover:bg-blue-900 hover:text-white transition-colors">修正</button>
-          </div>
-          <p class="whitespace-pre-wrap font-bold text-base leading-relaxed ${hasAns ? 'text-gray-800' : 'text-gray-400'}">${hasAns ? ans : '（未回答）'}</p>
-        </div>`;
-      });
-      document.getElementById('preview-list').innerHTML = html;
-    }
-
-    function renderStatus(type) {
-      const icon = document.getElementById('status-icon');
-      const head = document.getElementById('status-heading');
-      const msg = document.getElementById('status-message');
-      const btn = document.getElementById('status-btn');
-      
-      icon.className = "w-24 h-24 border-4 border-blue-900 flex items-center justify-center mx-auto mb-8 shadow-[6px_6px_0_0_#1e3a8a]";
-      
-      if(type === 'submitting') {
-        icon.classList.add('bg-cyan-400');
-        icon.innerHTML = `<i data-lucide="loader-2" class="w-12 h-12 animate-spin text-blue-900"></i>`;
-        head.innerText = "Processing...";
-        msg.innerText = "ご入力いただいた内容を安全に送信しています。";
-        btn.classList.add('hidden-step');
-      } else if (type === 'complete') {
-        icon.classList.add('bg-blue-900', 'text-cyan-400');
-        icon.innerHTML = `<i data-lucide="check-circle" class="w-12 h-12"></i>`;
-        head.innerText = "送信完了！";
-        msg.innerText = "ご協力ありがとうございました！\n自動解析された要件定義書が管理者に安全に通知されました。";
-        btn.innerText = "最初に戻る";
-        btn.classList.remove('hidden-step');
-      } else {
-        icon.classList.add('bg-rose-600', 'text-white');
-        icon.innerHTML = `<i data-lucide="alert-circle" class="w-12 h-12"></i>`;
-        head.innerText = "送信エラー";
-        msg.innerText = "通信に失敗しました。時間をおいて再度お試しいただくか、担当者へ直接ご連絡ください。";
-        btn.innerText = "フォームに戻る";
-        btn.classList.remove('hidden-step');
-      }
-      lucide.createIcons();
-    }
-
-    function updateProgress() {
-      const c = questions.filter(q => state.answers[q.id] && state.answers[q.id].trim() !== '').length;
-      const p = Math.round((c / questions.length) * 100);
-      document.getElementById('progress-count').innerText = c;
-      document.getElementById('progress-percent').innerText = p + '%';
-      document.getElementById('progress-bar').style.width = p + '%';
-    }
-
-    // データ操作・送信
-    function resetData() {
-      if(confirm('入力をすべて消去しますか？')) {
-        state.answers = {};
-        localStorage.removeItem('hearing_answers');
-        state.activeIdx = 0;
-        updateProgress();
-        if(state.mode==='step') renderStep(); else renderAll();
-        renderNav();
-      }
-    }
-
-    function resetToHome() {
-      if(state.step === 'complete') {
-        state.answers = {};
-        localStorage.removeItem('hearing_answers');
-        state.activeIdx = 0;
-        updateProgress();
-        if(state.mode==='step') renderStep(); else renderAll();
-      }
-      changeStep('form');
-    }
-
-    function copyAnswers() {
-      const text = questions.map((q, i) => `【Q${i+1}. ${q.category}】\n${state.answers[q.id] || '未回答'}\n`).join('\n');
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        const btn = document.getElementById('btn-copy-answers');
-        const origHtml = btn.innerHTML;
-        btn.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> COPIED!`;
-        btn.classList.add('bg-cyan-400', 'text-blue-900');
-        lucide.createIcons();
-        setTimeout(() => { btn.innerHTML = origHtml; btn.classList.remove('bg-cyan-400', 'text-blue-900'); lucide.createIcons(); }, 2000);
-      } catch(e) {}
-      document.body.removeChild(ta);
-    }
-
-    async function submitData() {
-      changeStep('submitting');
-      try {
-        if (!CONFIG.GAS_URL || CONFIG.GAS_URL === "YOUR_GAS_WEBAPP_URL_HERE") {
-          console.warn("GASのURLが設定されていません。デモ動作として扱います。");
-          await new Promise(r => setTimeout(r, 2000));
-          changeStep('complete');
-          return;
+  $('ocrButton').onclick = () => withButton($('ocrButton'), 'AIが読み取り中...', async () => {
+    if(!imageData) return toast('画像を選択してください。', true);
+    try {
+      const instruction = `領収書または書類画像から正確に情報を抽出し、指定されたJSONだけを返してください。店舗名・日付・合計金額を最優先で確認してください。${$('ocrType').value ? `種類は「${$('ocrType').value}」を優先してください。` : ''}${$('ocrDate').value ? `日付は「${$('ocrDate').value}」を優先してください。` : ''}`;
+      const payload = {
+        contents:[{parts:[{text:instruction},{inlineData:{mimeType:imageMime,data:imageData}}]}],
+        generationConfig:{
+          responseMimeType:'application/json',
+          responseSchema:{
+            type:'OBJECT',
+            properties:{
+              type:{type:'STRING'}, date:{type:'STRING'}, store:{type:'STRING'}, amount:{type:'NUMBER'},
+              category:{type:'STRING'}, patientName:{type:'STRING'}, items:{type:'STRING'}
+            },
+            required:['type','date','store','amount','category','items']
+          }
         }
+      };
+      const result = await api({ action:'call_gemini', payload });
+      const text = result.result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text) throw new Error('AIの読取結果が空です。画像を撮り直してください。');
+      const data = JSON.parse(text);
+      if($('ocrType').value) data.type = $('ocrType').value;
+      if($('ocrDate').value) data.date = $('ocrDate').value;
+      if($('ocrPatient').value.trim()) data.patientName = $('ocrPatient').value.trim();
+      data.type = ['領収書','医療費','固定支払','収入','書類'].includes(data.type) ? data.type : '領収書';
+      data.amount = Number(data.amount) || 0;
+      data.items = data.items || '-';
+      openOcrConfirm(data);
+    } catch(e) { toast('AI読取エラー: ' + e.message, true); }
+  });
 
-        // GASへの送信
-        const response = await fetch(CONFIG.GAS_URL, {
-          method: 'POST',
-          mode: 'no-cors', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            answers: state.answers, 
-            timestamp: new Date().toISOString() 
-          })
-        });
-        
-        changeStep('complete');
+  function openOcrConfirm(data){
+    pendingOcrData = data;
+    $('ocrConfirmType').value = data.type;
+    $('ocrConfirmDate').value = data.date || todayString();
+    $('ocrConfirmStore').value = data.store || '';
+    $('ocrConfirmPatient').value = data.patientName || '';
+    $('ocrConfirmAmount').value = data.amount || '';
+    fillCategories($('ocrConfirmCategory'), data.type, data.category || 'その他');
+    $('ocrConfirmItems').value = data.items === '-' ? '' : (data.items || '');
+    $('ocrConfirmModal').classList.remove('hidden');
+    $('ocrConfirmModal').classList.add('flex');
+  }
+  window.closeOcrConfirm = function(){
+    $('ocrConfirmModal').classList.add('hidden');
+    $('ocrConfirmModal').classList.remove('flex');
+  };
+  $('ocrConfirmType').onchange = () => fillCategories($('ocrConfirmCategory'), $('ocrConfirmType').value);
+  $('saveOcrConfirmButton').onclick = () => withButton($('saveOcrConfirmButton'), '保存中...', async () => {
+    const data = {
+      type:$('ocrConfirmType').value,
+      date:$('ocrConfirmDate').value,
+      store:$('ocrConfirmStore').value.trim(),
+      patientName:$('ocrConfirmPatient').value.trim(),
+      amount:Number($('ocrConfirmAmount').value),
+      category:$('ocrConfirmCategory').value,
+      items:$('ocrConfirmItems').value.trim() || '-'
+    };
+    try {
+      const result = await saveWithDuplicateCheck(data);
+      if(result) {
+        closeOcrConfirm();
+        showSaved();
+      }
+    } catch(e) { toast(e.message, true); }
+  });
 
-      } catch(e) {
-        console.error("Submit error:", e);
-        changeStep('error');
+  const defaultFixed = ['家賃','電話・スマホ・ネット代','パソコン代金','自動車保険','借り受け金','車両代金'];
+  function fixedItems(){ return JSON.parse(localStorage.getItem('yuzuFixedItems') || JSON.stringify(defaultFixed)); }
+  function renderFixedItems(){
+    const items = fixedItems();
+    $('fixedItem').innerHTML = '<option value="">選択してください</option>' + items.map(x => `<option>${escapeHtml(x)}</option>`).join('') + '<option value="__new__">その他（新規）</option>';
+  }
+  $('fixedItem').onchange = () => $('newFixedWrap').classList.toggle('hidden', $('fixedItem').value !== '__new__');
+  $('saveFixedButton').onclick = () => withButton($('saveFixedButton'), '保存中...', async () => {
+    let item = $('fixedItem').value;
+    if(item === '__new__') item = $('newFixedItem').value.trim();
+    const data = { type:'固定支払', date:$('fixedDate').value, store:item, amount:Number($('fixedAmount').value), category:'固定費', items:item, patientName:'' };
+    try {
+      const result = await saveWithDuplicateCheck(data);
+      if(!result) return;
+      if($('fixedItem').value === '__new__' && item){
+        const arr = fixedItems();
+        if(!arr.includes(item)) { arr.push(item); localStorage.setItem('yuzuFixedItems', JSON.stringify(arr)); renderFixedItems(); }
+      }
+      $('fixedAmount').value = '';
+      toast('固定支払を保存しました。');
+    } catch(e) { toast(e.message, true); }
+  });
+
+  async function loadHistory(){
+    $('historyLoading').classList.remove('hidden');
+    $('historyList').innerHTML = '';
+    try {
+      const r = await api({ action:'getHistory' });
+      allHistory = r.data || [];
+      analytics = { periods:r.periods || {month:r.summary}, trends:r.trends || {} };
+      renderSummary();
+      renderHistory();
+    } catch(e) { toast(e.message, true); }
+    finally { $('historyLoading').classList.add('hidden'); }
+  }
+
+  function renderSummary(){
+    const s = analytics.periods[currentPeriod] || emptySummary();
+    const title = {day:'今日',week:'今週',month:'今月'}[currentPeriod];
+    $('summaryTitle').textContent = title + 'の収支';
+    $('summaryIncome').textContent = money(s.income);
+    $('summaryExpense').textContent = money(s.expense);
+    $('summaryBalance').textContent = money(s.balance);
+    $('summaryGeneral').textContent = money(s.general);
+    $('summaryMedical').textContent = money(s.medical);
+    $('summaryFixed').textContent = money(s.fixed);
+    $('summaryBalance').className = 'text-sm font-black mt-1 ' + (s.balance < 0 ? 'text-rose-200' : 'text-emerald-200');
+
+    const trend = analytics.trends[currentPeriod === 'day' ? 'daily' : currentPeriod === 'week' ? 'weekly' : 'monthly'] || [];
+    $('trendList').innerHTML = trend.slice(-8).map(x => `<div class="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] items-center"><span class="font-bold text-slate-500">${escapeHtml(x.label)}</span><span class="text-emerald-600">入 ${money(x.income)}</span><span class="text-rose-600">出 ${money(x.expense)}</span></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">データがありません</p>';
+
+    const cats = Object.entries(s.categories || {}).sort((a,b) => b[1] - a[1]);
+    $('categoryList').innerHTML = cats.map(([n,v]) => `<div><div class="flex justify-between text-[11px] mb-1"><b>${escapeHtml(n)}</b><span>${money(v)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${s.expense ? Math.max(2, v / s.expense * 100) : 0}%"></div></div></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">支出データがありません</p>';
+  }
+
+  function filteredHistory(){
+    const keyword = $('historySearch').value.trim().toLowerCase();
+    const from = $('historyFrom').value;
+    const to = $('historyTo').value;
+    return allHistory.filter(item => {
+      if(currentFilter !== 'all' && item.sourceSheet !== currentFilter) return false;
+      if(from && item.date < from) return false;
+      if(to && item.date > to) return false;
+      if(keyword){
+        const haystack = [item.store,item.items,item.category,item.patientName,item.type].join(' ').toLowerCase();
+        if(!haystack.includes(keyword)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderHistory(){
+    const list = filteredHistory();
+    const shown = list.slice(0, displayCount);
+    $('historyCount').textContent = `${list.length}件`;
+    $('historyList').innerHTML = shown.map(item => {
+      const income = item.type === '収入' || item.sourceSheet === '収入用';
+      const encoded = encodeURIComponent(item.recordId || '');
+      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(item.category || '未分類')}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
+    }).join('') || '<div class="text-center text-xs text-slate-400 py-12">条件に該当する履歴がありません</div>';
+    $('moreButton').classList.toggle('hidden', list.length <= displayCount);
+    lucide.createIcons();
+  }
+
+  document.querySelectorAll('.period-button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.period-button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentPeriod = b.dataset.period;
+    renderSummary();
+  });
+  document.querySelectorAll('.filter-button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.filter-button').forEach(x => {
+      x.classList.remove('active','bg-slate-900','text-white');
+      x.classList.add('bg-white','text-slate-600');
+    });
+    b.classList.add('active','bg-slate-900','text-white');
+    currentFilter = b.dataset.filter;
+    displayCount = 12;
+    renderHistory();
+  });
+  ['historySearch','historyFrom','historyTo'].forEach(id => $(id).addEventListener('input', () => { displayCount = 12; renderHistory(); }));
+  $('clearHistoryFilter').onclick = () => {
+    $('historySearch').value = '';
+    $('historyFrom').value = '';
+    $('historyTo').value = '';
+    displayCount = 12;
+    renderHistory();
+  };
+  $('moreButton').onclick = () => { displayCount += 12; renderHistory(); };
+  $('refreshHistoryButton').onclick = loadHistory;
+
+  function findItemById(encoded){
+    const id = decodeURIComponent(encoded);
+    return allHistory.find(x => (x.recordId || '') === id);
+  }
+  window.openEdit = function(encoded){
+    const item = findItemById(encoded);
+    if(!item) return toast('対象データが見つかりません。履歴を更新してください。', true);
+    $('editRecordId').value = item.recordId || '';
+    $('editSheet').value = item.sourceSheet || '';
+    $('editType').value = item.type;
+    $('editDate').value = item.date;
+    $('editStore').value = item.store;
+    $('editPatient').value = item.patientName || '';
+    $('editAmount').value = item.amount;
+    $('editCategory').value = item.category;
+    $('editItems').value = item.items === '-' ? '' : item.items;
+    $('editModal').classList.remove('hidden');
+    $('editModal').classList.add('flex');
+  };
+  window.closeEdit = function(){ $('editModal').classList.add('hidden'); $('editModal').classList.remove('flex'); };
+  $('saveEditButton').onclick = () => withButton($('saveEditButton'), '保存中...', async () => {
+    const data = {
+      type:$('editType').value,
+      date:$('editDate').value,
+      store:$('editStore').value.trim(),
+      patientName:$('editPatient').value.trim(),
+      amount:Number($('editAmount').value),
+      category:$('editCategory').value.trim(),
+      items:$('editItems').value.trim() || '-'
+    };
+    try {
+      await api({ action:'update_row', sourceSheet:$('editSheet').value, recordId:$('editRecordId').value, data });
+      closeEdit();
+      toast('修正しました。');
+      loadHistory();
+    } catch(e) { toast(e.message, true); }
+  });
+
+  window.deleteRecord = async function(encoded){
+    const item = findItemById(encoded);
+    if(!item) return;
+    if(!confirm(`${item.store} ${money(item.amount)} を削除しますか？\n削除後も設定画面から復元できます。`)) return;
+    try {
+      await api({ action:'delete_row', sourceSheet:item.sourceSheet, recordId:item.recordId, rowIndex:item.rowIndex });
+      toast('削除済みに移動しました。');
+      loadHistory();
+    } catch(e) { toast(e.message, true); }
+  };
+
+  $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
+    const url = $('gasUrl').value.trim();
+    if(!/^https:\/\/script\.google\.com\//.test(url)) return toast('正しいGASウェブアプリURLを入力してください。', true);
+    localStorage.setItem('yuzuGasUrl', url);
+    updateMode();
+    try {
+      const r = await api({ action:'setup' });
+      toast(`接続成功。既存データ${r.migrated || 0}件に管理IDを付与しました。`);
+      loadDeleted();
+    } catch(e) { toast('URLは保存しましたが接続確認に失敗しました: ' + e.message, true); }
+  });
+
+  $('backupButton').onclick = () => withButton($('backupButton'), 'バックアップ中...', async () => {
+    try {
+      const r = await api({ action:'backup_now' });
+      toast(`バックアップを作成しました：${r.backupName}`);
+    } catch(e) { toast(e.message, true); }
+  });
+
+  $('repairButton').onclick = () => withButton($('repairButton'), '点検・修復中...', async () => {
+    if(!confirm('列構成を点検し、認識できる見出しを標準列へ再配置します。実行前に自動バックアップされます。続けますか？')) return;
+    try {
+      const r = await api({ action:'repair_layout' });
+      $('maintenanceResult').innerHTML = `バックアップ：${escapeHtml(r.backupName)}<br>${(r.reports || []).map(escapeHtml).join('<br>')}`;
+      $('maintenanceResult').classList.remove('hidden');
+      toast(`${r.repairedRows || 0}行を点検・修復しました。`);
+    } catch(e) { toast(e.message, true); }
+  });
+
+  async function loadDeleted(){
+    if(!connected()) return;
+    try {
+      const r = await api({ action:'get_deleted' });
+      const list = r.data || [];
+      $('deletedList').innerHTML = list.slice(0, 20).map(item => {
+        const encoded = encodeURIComponent(item.recordId || '');
+        return `<div class="border border-slate-100 rounded-xl p-3 bg-slate-50"><div class="flex justify-between gap-2"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.deletedAt || '')}</p><p class="text-xs font-bold truncate">${escapeHtml(item.store || '')}</p><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p></div><div class="text-right"><p class="text-xs font-black">${money(item.amount)}</p><button class="mt-2 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700" onclick="restoreDeleted('${encoded}')">復元</button></div></div></div>`;
+      }).join('') || '<p class="text-xs text-slate-400 text-center py-4">削除済みデータはありません</p>';
+    } catch(e) { $('deletedList').innerHTML = `<p class="text-xs text-red-500">${escapeHtml(e.message)}</p>`; }
+  }
+  $('refreshDeletedButton').onclick = loadDeleted;
+  window.restoreDeleted = async function(encoded){
+    const recordId = decodeURIComponent(encoded);
+    if(!confirm('このデータを元のシートへ復元しますか？')) return;
+    try {
+      await api({ action:'restore_deleted', recordId });
+      toast('データを復元しました。');
+      loadDeleted();
+    } catch(e) { toast(e.message, true); }
+  };
+
+  $('importFileButton').onclick = () => withButton($('importFileButton'), '取込中...', async () => {
+    try {
+      const file = $('importFile').files[0];
+      if(!file) throw new Error('CSVまたはExcelファイルを選択してください。');
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type:'array', cellDates:true });
+      let rows = [];
+      wb.SheetNames.forEach(name => {
+        const arr = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, defval:'', raw:false });
+        rows.push(...tabularToRecords(arr, name));
+      });
+      if(!rows.length) throw new Error('取り込める行が見つかりません。');
+      const r = await api({ action:'import_history', rows, skipDuplicates:true });
+      showImportResult(`自動バックアップ：${escapeHtml(r.backupName || '')}<br>取込完了：${r.imported}件／重複・不備で除外：${r.skipped}件${r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : ''}`);
+      toast(`${r.imported}件を取り込みました。`);
+    } catch(e) { toast(e.message, true); }
+  });
+
+  $('importSheetButton').onclick = () => withButton($('importSheetButton'), '取込中...', async () => {
+    try {
+      const url = $('importSheetUrl').value.trim();
+      if(!url) throw new Error('過去のGoogleスプレッドシートURLを入力してください。');
+      const r = await api({ action:'import_spreadsheet', spreadsheetUrl:url });
+      showImportResult(`自動バックアップ：${escapeHtml(r.backupName || '')}<br>${escapeHtml(r.sourceName || '過去シート')}から ${r.imported}件取込、${r.skipped}件除外しました。`);
+      toast(`${r.imported}件を取り込みました。`);
+    } catch(e) { toast(e.message, true); }
+  });
+
+  function showImportResult(html){ $('importResult').innerHTML = html; $('importResult').classList.remove('hidden'); }
+  function normalizeHeader(v){ return String(v || '').trim().replace(/[\s　]/g, ''); }
+  function guessType(value, sheet){
+    const s = String(value || '') + ' ' + String(sheet || '');
+    if(/医療/.test(s)) return '医療費';
+    if(/固定/.test(s)) return '固定支払';
+    if(/収入|売上|入金/.test(s)) return '収入';
+    if(/書類/.test(s)) return '書類';
+    return '領収書';
+  }
+  function tabularToRecords(values, sheetName){
+    if(!values.length) return [];
+    const headers = values[0].map(normalizeHeader);
+    const headerWords = ['日付','date','金額','amount','店舗','支払先','カテゴリ','category'];
+    const hasHeader = headers.some(x => headerWords.includes(x));
+    const out = [];
+    for(let i = hasHeader ? 1 : 0; i < values.length; i++){
+      const r = values[i];
+      if(r.every(x => String(x).trim() === '')) continue;
+      if(hasHeader){
+        const o = {};
+        headers.forEach((h,j) => o[h] = r[j]);
+        out.push(mapImportObject(o, sheetName));
+      } else {
+        out.push({ timestamp:r[0], date:r[1], type:guessType(r[2], sheetName), patientName:/医療/.test(sheetName) ? r[2] : '', store:r[3], amount:r[4], category:r[5], items:r[6], recordId:r[7], sourceSheet:sheetName });
       }
     }
-  </script>
+    return out;
+  }
+  function mapImportObject(o, sheet){
+    const pick = (keys) => {
+      for(const k of keys){
+        const n = normalizeHeader(k);
+        if(o[n] !== undefined && String(o[n]).trim() !== '') return o[n];
+      }
+      return '';
+    };
+    const rawType = pick(['タイプ','種類','type']);
+    return {
+      timestamp:pick(['タイムスタンプ','登録日時','timestamp']),
+      date:pick(['日付','取引日','支払日','date']),
+      type:guessType(rawType, sheet),
+      patientName:pick(['患者名','氏名','patientName']),
+      store:pick(['店舗・支払先','店舗','支払先','名称','店名','収入元','store']),
+      amount:pick(['金額','合計','支払金額','収入金額','amount']),
+      category:pick(['カテゴリ','分類','category']),
+      items:pick(['内容','品目','詳細','摘要','items']),
+      recordId:pick(['管理ID','ID','recordId']),
+      sourceSheet:sheet
+    };
+  }
+
+  $('manualDate').value = todayString();
+  $('fixedDate').value = todayString();
+  $('ocrDate').value = todayString();
+  $('gasUrl').value = localStorage.getItem('yuzuGasUrl') || '';
+  renderFixedItems();
+  updateManualType();
+  updateMode();
+  lucide.createIcons();
+
+</script>
 </body>
 </html>
