@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.3</title>
+  <title>領収書・収支管理 - YUZU Production v3.6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -35,7 +35,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.3</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.6</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -110,6 +110,43 @@
 
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳</h3><div id="categoryList" class="space-y-3"></div></div>
 
+
+
+      <!-- 任意月の集計・支出履歴 -->
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1"><i data-lucide="calendar-range" class="w-4 h-4 text-indigo-600"></i>月別集計・支出履歴</h3>
+            <p class="text-[10px] text-slate-400 mt-1">確認したい年月を選ぶと、その月の集計と支出明細を表示します。</p>
+          </div>
+          <span id="monthlyExpenseCount" class="text-[10px] font-bold text-indigo-600 whitespace-nowrap">0件</span>
+        </div>
+        <div class="grid grid-cols-[42px_1fr_42px] gap-2 items-center mb-4">
+          <button id="previousMonthButton" class="h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 flex items-center justify-center" title="前の月"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <input id="monthlyHistoryMonth" type="month" class="field text-center font-bold">
+          <button id="nextMonthButton" class="h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 flex items-center justify-center" title="次の月"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+        </div>
+        <p id="monthlySummaryTitle" class="text-xs font-black text-slate-800 mb-3">月別集計</p>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-2.5"><p class="text-[9px] text-emerald-600 font-bold">収入</p><p id="monthlyIncome" class="text-xs font-black text-emerald-700 mt-1">¥0</p></div>
+          <div class="rounded-xl bg-rose-50 border border-rose-100 p-2.5"><p class="text-[9px] text-rose-600 font-bold">支出</p><p id="monthlyExpense" class="text-xs font-black text-rose-700 mt-1">¥0</p></div>
+          <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-2.5"><p class="text-[9px] text-indigo-600 font-bold">差引</p><p id="monthlyBalance" class="text-xs font-black text-indigo-700 mt-1">¥0</p></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">一般</p><b id="monthlyGeneral" class="text-[11px] text-slate-700">¥0</b></div>
+          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">医療</p><b id="monthlyMedical" class="text-[11px] text-slate-700">¥0</b></div>
+          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">固定</p><b id="monthlyFixed" class="text-[11px] text-slate-700">¥0</b></div>
+        </div>
+        <div class="border-t border-slate-100 pt-3">
+          <h4 class="text-[10px] font-bold text-slate-500 mb-2">カテゴリ別支出</h4>
+          <div id="monthlyCategoryList" class="space-y-2"></div>
+        </div>
+        <div class="border-t border-slate-100 mt-4 pt-3">
+          <h4 class="text-[10px] font-bold text-slate-500 mb-2">選択月の支出履歴</h4>
+          <div id="monthlyExpenseList" class="space-y-2"></div>
+          <button id="monthlyMoreButton" class="hidden w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-[11px] font-bold text-slate-600">この月の履歴をもっと見る</button>
+        </div>
+      </div>
 
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4 space-y-3">
         <div class="flex items-center justify-between"><h3 class="text-xs font-bold text-slate-600 flex items-center gap-1"><i data-lucide="search" class="w-4 h-4"></i>履歴を検索・期間指定</h3><span id="historyCount" class="text-[10px] font-bold text-indigo-600">0件</span></div>
@@ -228,10 +265,12 @@
   document.querySelectorAll('.filter-button').forEach(el => el.className += ' ' + classes.filter);
 
   let allHistory = [];
-  let analytics = { periods:{ day:emptySummary(), week:emptySummary(), month:emptySummary() }, trends:{ daily:[], weekly:[], monthly:[] } };
+  let analytics = { periods:{ day:emptySummary(), week:emptySummary(), month:emptySummary() }, trends:{ daily:[], weekly:[], monthly:[] }, monthlySummaries:[] };
   let currentPeriod = 'day';
   let currentFilter = 'all';
   let displayCount = 12;
+  let selectedMonth = todayString().slice(0, 7);
+  let monthlyDisplayCount = 10;
   let imageData = '';
   let imageMime = '';
   let pendingOcrData = null;
@@ -531,8 +570,16 @@
     try {
       const r = await api({ action:'getHistory' });
       allHistory = r.data || [];
-      analytics = { periods:r.periods || {month:r.summary}, trends:r.trends || {} };
+      analytics = {
+        periods:r.periods || {month:r.summary},
+        trends:r.trends || {},
+        monthlySummaries:r.monthlySummaries || buildMonthlySummariesClient(allHistory)
+      };
+      const availableMonths = analytics.monthlySummaries.map(x => x.month);
+      if(!selectedMonth || (!availableMonths.includes(selectedMonth) && availableMonths.length)) selectedMonth = availableMonths[0];
+      $('monthlyHistoryMonth').value = selectedMonth;
       renderSummary();
+      renderMonthlySection();
       renderHistory();
     } catch(e) { toast(e.message, true); }
     finally { $('historyLoading').classList.add('hidden'); }
@@ -556,6 +603,84 @@
     const cats = Object.entries(s.categories || {}).sort((a,b) => b[1] - a[1]);
     $('categoryList').innerHTML = cats.map(([n,v]) => `<div><div class="flex justify-between text-[11px] mb-1"><b>${escapeHtml(n)}</b><span>${money(v)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${s.expense ? Math.max(2, v / s.expense * 100) : 0}%"></div></div></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">支出データがありません</p>';
   }
+
+
+  function buildMonthlySummariesClient(records){
+    const groups = {};
+    records.forEach(item => {
+      const month = String(item.date || '').slice(0, 7);
+      if(!/^\d{4}-\d{2}$/.test(month)) return;
+      if(!groups[month]) groups[month] = { month, label:month.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0, incomeCount:0 };
+      const s = groups[month];
+      const amount = Number(item.amount || 0);
+      s.count++;
+      const income = item.type === '収入' || item.sourceSheet === '収入用';
+      if(income){ s.income += amount; s.incomeCount++; }
+      else {
+        s.expense += amount; s.total += amount; s.expenseCount++;
+        if(item.sourceSheet === '一般用') s.general += amount;
+        if(item.sourceSheet === '医療費用') s.medical += amount;
+        if(item.sourceSheet === '固定支払') s.fixed += amount;
+        const category = item.category || '未分類';
+        s.categories[category] = (s.categories[category] || 0) + amount;
+      }
+      s.balance = s.income - s.expense;
+    });
+    const current = todayString().slice(0,7);
+    if(!groups[current]) groups[current] = { month:current, label:current.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0, incomeCount:0 };
+    return Object.values(groups).sort((a,b) => b.month.localeCompare(a.month));
+  }
+
+  function shiftMonth(month, amount){
+    const match = String(month || '').match(/^(\d{4})-(\d{2})$/);
+    const base = match ? new Date(Number(match[1]), Number(match[2]) - 1, 1) : new Date();
+    base.setMonth(base.getMonth() + amount);
+    return `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function renderMonthlySection(){
+    if(!$('monthlyHistoryMonth')) return;
+    $('monthlyHistoryMonth').value = selectedMonth;
+    const summary = analytics.monthlySummaries.find(x => x.month === selectedMonth) || { month:selectedMonth, label:selectedMonth.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0 };
+    $('monthlySummaryTitle').textContent = `${summary.label || selectedMonth}の集計`;
+    $('monthlyIncome').textContent = money(summary.income);
+    $('monthlyExpense').textContent = money(summary.expense);
+    $('monthlyBalance').textContent = money(summary.balance);
+    $('monthlyBalance').className = 'text-xs font-black mt-1 ' + (Number(summary.balance) < 0 ? 'text-rose-700' : 'text-indigo-700');
+    $('monthlyGeneral').textContent = money(summary.general);
+    $('monthlyMedical').textContent = money(summary.medical);
+    $('monthlyFixed').textContent = money(summary.fixed);
+
+    const categories = Object.entries(summary.categories || {}).sort((a,b) => b[1] - a[1]);
+    $('monthlyCategoryList').innerHTML = categories.map(([name,value]) => `<div><div class="flex justify-between text-[10px] mb-1"><b class="text-slate-600">${escapeHtml(name)}</b><span>${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${summary.expense ? Math.max(2, value / summary.expense * 100) : 0}%"></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-2">この月の支出はありません</p>';
+
+    const expenses = allHistory.filter(item => String(item.date || '').slice(0,7) === selectedMonth && !(item.type === '収入' || item.sourceSheet === '収入用'));
+    $('monthlyExpenseCount').textContent = `${expenses.length}件`;
+    const shown = expenses.slice(0, monthlyDisplayCount);
+    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(item.category || '未分類')}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
+    $('monthlyMoreButton').classList.toggle('hidden', expenses.length <= monthlyDisplayCount);
+    lucide.createIcons();
+  }
+
+  $('monthlyHistoryMonth').addEventListener('change', () => {
+    selectedMonth = $('monthlyHistoryMonth').value || todayString().slice(0,7);
+    monthlyDisplayCount = 10;
+    renderMonthlySection();
+  });
+  $('previousMonthButton').onclick = () => {
+    selectedMonth = shiftMonth(selectedMonth, -1);
+    monthlyDisplayCount = 10;
+    renderMonthlySection();
+  };
+  $('nextMonthButton').onclick = () => {
+    selectedMonth = shiftMonth(selectedMonth, 1);
+    monthlyDisplayCount = 10;
+    renderMonthlySection();
+  };
+  $('monthlyMoreButton').onclick = () => {
+    monthlyDisplayCount += 10;
+    renderMonthlySection();
+  };
 
   function filteredHistory(){
     const keyword = $('historySearch').value.trim().toLowerCase();
