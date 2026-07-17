@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production</title>
+  <title>領収書・収支管理 - YUZU Production v3.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -35,7 +35,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理</h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.3</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -148,7 +148,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
         <div id="statusBox" class="text-xs font-bold leading-relaxed p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950"></div>
         <label class="label">GASウェブアプリURL<input id="gasUrl" class="field mt-1" placeholder="https://script.google.com/macros/s/.../exec"></label>
-        <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>設定を保存・初期化</button>
+        <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>接続確認して保存</button>
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
@@ -274,7 +274,7 @@
     const savedUrl = overrideUrl || localStorage.getItem('yuzuGasUrl') || '';
     const endpoint = normalizeGasUrl(savedUrl);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20000);
+    const timer = setTimeout(() => controller.abort(), 30000);
     let response;
     try {
       response = await fetch(endpoint, {
@@ -286,7 +286,7 @@
         signal:controller.signal
       });
     } catch(e) {
-      const detail = e && e.name === 'AbortError' ? '接続が20秒でタイムアウトしました。' : 'GASへ接続できませんでした。';
+      const detail = e && e.name === 'AbortError' ? '接続が30秒でタイムアウトしました。' : `GASへ接続できませんでした（${e && e.message ? e.message : '通信失敗'}）。`;
       throw new Error(detail + ' デプロイを「次のユーザーとして実行：自分」「アクセスできるユーザー：全員」にし、/exec URLを確認してください。');
     } finally {
       clearTimeout(timer);
@@ -663,18 +663,20 @@
   };
 
   $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
+    const previousUrl = localStorage.getItem('yuzuGasUrl') || '';
     try {
       const url = normalizeGasUrl($('gasUrl').value);
-      const r = await api({ action:'setup' }, url);
+      const r = await api({ action:'ping' }, url);
       localStorage.setItem('yuzuGasUrl', url);
       $('gasUrl').value = url;
       updateMode();
-      toast(`接続成功。既存データ${r.migrated || 0}件に管理IDを付与しました。`);
+      toast(`接続成功（${r.version || 'GAS'}）。URLを保存しました。`);
       loadDeleted();
     } catch(e) {
-      localStorage.removeItem('yuzuGasUrl');
+      if(previousUrl) localStorage.setItem('yuzuGasUrl', previousUrl);
+      else localStorage.removeItem('yuzuGasUrl');
       updateMode();
-      toast('接続できないためURLは保存していません。' + e.message, true);
+      toast('接続確認に失敗しました。以前の設定は変更していません。' + e.message, true);
     }
   });
 
@@ -730,8 +732,12 @@
       });
       if(!rows.length) throw new Error('取り込める行が見つかりません。');
       const r = await api({ action:'import_history', rows, skipDuplicates:true });
-      showImportResult(`自動バックアップ：${escapeHtml(r.backupName || '')}<br>取込完了：${r.imported}件／重複・不備で除外：${r.skipped}件${r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : ''}`);
-      toast(`${r.imported}件を取り込みました。`);
+      const backupText = r.backupName ? `自動バックアップ：${escapeHtml(r.backupName)}` : '自動バックアップ：作成なし';
+      const warningText = r.backupWarning ? `<br><span class="text-amber-700">${escapeHtml(r.backupWarning)}</span>` : '';
+      const errorText = r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : '';
+      showImportResult(`${backupText}${warningText}<br>取込完了：${r.imported}件／重複・不備で除外：${r.skipped}件${errorText}`);
+      toast(r.imported > 0 ? `${r.imported}件を取り込みました。履歴を更新します。` : '新規取込は0件でした。重複または入力形式を確認してください。', r.imported === 0);
+      switchTab('history');
     } catch(e) { toast(e.message, true); }
   });
 
@@ -740,8 +746,13 @@
       const url = $('importSheetUrl').value.trim();
       if(!url) throw new Error('過去のGoogleスプレッドシートURLを入力してください。');
       const r = await api({ action:'import_spreadsheet', spreadsheetUrl:url });
-      showImportResult(`自動バックアップ：${escapeHtml(r.backupName || '')}<br>${escapeHtml(r.sourceName || '過去シート')}から ${r.imported}件取込、${r.skipped}件除外しました。`);
-      toast(`${r.imported}件を取り込みました。`);
+      const backupText = r.backupName ? `自動バックアップ：${escapeHtml(r.backupName)}` : '自動バックアップ：作成なし';
+      const warningText = r.backupWarning ? `<br><span class="text-amber-700">${escapeHtml(r.backupWarning)}</span>` : '';
+      const sheetsText = Array.isArray(r.sourceSheets) && r.sourceSheets.length ? `<br>対象シート：${r.sourceSheets.map(escapeHtml).join('、')}` : '';
+      const errorText = r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : '';
+      showImportResult(`${backupText}${warningText}<br>${escapeHtml(r.sourceName || '過去シート')}から ${r.imported}件取込、${r.skipped}件除外しました。${sheetsText}${errorText}`);
+      toast(r.imported > 0 ? `${r.imported}件を取り込みました。履歴を更新します。` : '新規取込は0件でした。すべて重複か、取込対象外です。', r.imported === 0);
+      switchTab('history');
     } catch(e) { toast(e.message, true); }
   });
 
@@ -758,7 +769,7 @@
   function tabularToRecords(values, sheetName){
     if(!values.length) return [];
     const headers = values[0].map(normalizeHeader);
-    const headerWords = ['日付','date','金額','amount','店舗','支払先','カテゴリ','category'];
+    const headerWords = ['日付','取引日','支払日','date','金額','合計','支払金額','収入金額','amount','店舗','店舗・支払先','支払先','収入元','カテゴリ','category'];
     const hasHeader = headers.some(x => headerWords.includes(x));
     const out = [];
     for(let i = hasHeader ? 1 : 0; i < values.length; i++){
