@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.6</title>
+  <title>領収書・収支管理 - YUZU Production v3.8</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -35,7 +35,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.6</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.8</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -108,7 +108,7 @@
 
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-slate-600 flex gap-1"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>期間別の推移</h3><button id="refreshHistoryButton" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 rounded-full px-3 py-1.5">更新</button></div><div id="trendList" class="space-y-2"></div></div>
 
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳</h3><div id="categoryList" class="space-y-3"></div></div>
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳 <span class="font-normal text-[9px] text-slate-400">店舗名を優先して集計</span></h3><div id="categoryList" class="space-y-3"></div></div>
 
 
 
@@ -275,12 +275,131 @@
   let imageMime = '';
   let pendingOcrData = null;
 
-  const expenseCategories = ['食費','外食','日用品','消耗品費','交通費','通信費','接待交際費','診療・治療','医薬品購入','固定費','その他'];
+  const expenseCategories = ['食費','外食','ドラックストア','コンビニ','日用品','消耗品費','交通費','通信費','接待交際費','診療・治療','医薬品購入','固定費','その他'];
   const incomeCategories = ['売上','給与','年金','給付金','返金','その他収入'];
 
-  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, count:0 }; }
+  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, categoryCounts:{}, count:0 }; }
   function money(v){ return '¥' + Number(v || 0).toLocaleString(); }
   function todayString(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function canonicalCategoryLabelClient(value){
+    const raw = String(value || '').trim();
+    if(!raw) return '';
+    if(/(^|\s)(drug\s*&?\s*store|drugstore)(\s|$)/i.test(raw) || /ドラッグストアー?|ドラックストアー?/i.test(raw)) return 'ドラックストア';
+    if(/(^|\s)(convenience\s*store|convenience)(\s|$)/i.test(raw) || /コンビニ/i.test(raw)) return 'コンビニ';
+    return raw;
+  }
+
+  function classifyStoreCategoryClient(store){
+    const name = String(store || '');
+    if(/drug\s*&?\s*store|drugstore|food\s*&?\s*drug|ドラッグストア|ドラックストア|コスモス|cosmos|クスリのアオキ|くすりのアオキ|アオキ|genky|ゲンキー|ゲンキ|v[・\-\s]*drug|vドラッグ|ウエルシア|ウェルシア|マツモトキヨシ|マツキヨ|スギ薬局|スギドラッグ|ツルハ|サンドラッグ|ココカラファイン|キリン堂|クリエイト|薬王堂|カワチ|セイムス|ザグザグ|ウォンツ|レデイ薬局|ダイコクドラッグ/i.test(name)) return 'ドラックストア';
+    if(/convenience\s*store|convenience|コンビニ|セブン[\s\-ー・]*イレブン|7[\s\-]*eleven|family\s*mart|ファミリーマート|ファミマ|lawson|ローソン|ministop|ミニストップ|デイリーヤマザキ|newdays|ニューデイズ|セイコーマート|ポプラ|ヤマザキショップ/i.test(name)) return 'コンビニ';
+    return '';
+  }
+
+  function normalizeCategoryClient(category, store, sourceSheet, type){
+    const raw = canonicalCategoryLabelClient(category);
+    if(type === '収入' || sourceSheet === '収入用') return raw || '収入';
+    if(type === '医療費' || sourceSheet === '医療費用') return raw || '未分類';
+    if(type === '固定支払' || sourceSheet === '固定支払') return raw || '固定費';
+    const byStore = classifyStoreCategoryClient(store);
+    if(byStore) return byStore;
+    return raw || '未分類';
+  }
+
+  function parseYmdClient(value){
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!match) return null;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  function normalizeHistoryItemClient(item){
+    const out = {...(item || {})};
+    if(!parseYmdClient(out.date) && parseYmdClient(out.type)){
+      const oldDate = out.date;
+      out.date = out.type;
+      out.type = oldDate;
+    }
+    out.category = normalizeCategoryClient(out.category, out.store, out.sourceSheet, out.type);
+    out.amount = Number(out.amount || 0);
+    return out;
+  }
+
+  function summarizeRecordsClient(records, start, end){
+    const s = emptySummary();
+    records.forEach(item => {
+      const d = parseYmdClient(item.date);
+      if(!d || d < start || d >= end) return;
+      const amount = Number(item.amount || 0);
+      s.count++;
+      const income = item.type === '収入' || item.sourceSheet === '収入用';
+      if(income){
+        s.income += amount;
+      } else {
+        s.expense += amount;
+        s.total += amount;
+        if(item.sourceSheet === '一般用') s.general += amount;
+        if(item.sourceSheet === '医療費用') s.medical += amount;
+        if(item.sourceSheet === '固定支払') s.fixed += amount;
+        const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
+        s.categories[category] = (s.categories[category] || 0) + amount;
+        s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
+      }
+    });
+    s.balance = s.income - s.expense;
+    return s;
+  }
+
+  function startOfWeekClient(date){
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = d.getDay();
+    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    return d;
+  }
+
+  function buildPeriodsClient(records){
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    const week = startOfWeekClient(today);
+    const nextWeek = new Date(week); nextWeek.setDate(nextWeek.getDate() + 7);
+    const month = new Date(today.getFullYear(), today.getMonth(), 1);
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return {
+      day:summarizeRecordsClient(records, today, tomorrow),
+      week:summarizeRecordsClient(records, week, nextWeek),
+      month:summarizeRecordsClient(records, month, nextMonth)
+    };
+  }
+
+  function buildTrendsClient(records){
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const make = (unit, count) => {
+      const rows = [];
+      for(let i=count-1; i>=0; i--){
+        let start, end, label;
+        if(unit === 'day'){
+          start = new Date(today); start.setDate(start.getDate() - i);
+          end = new Date(start); end.setDate(end.getDate() + 1);
+          label = `${start.getMonth()+1}/${start.getDate()}`;
+        }else if(unit === 'week'){
+          start = startOfWeekClient(today); start.setDate(start.getDate() - (7*i));
+          end = new Date(start); end.setDate(end.getDate() + 7);
+          label = `${start.getMonth()+1}/${start.getDate()}週`;
+        }else{
+          start = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          end = new Date(start.getFullYear(), start.getMonth()+1, 1);
+          label = `${start.getFullYear()}/${start.getMonth()+1}`;
+        }
+        const s = summarizeRecordsClient(records, start, end);
+        rows.push({label, income:s.income, expense:s.expense, balance:s.balance});
+      }
+      return rows;
+    };
+    return {daily:make('day',31), weekly:make('week',12), monthly:make('month',12)};
+  }
+
   function connected(){ return /^https:\/\/script\.google\.com\//.test(localStorage.getItem('yuzuGasUrl') || ''); }
   function escapeHtml(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
@@ -569,11 +688,12 @@
     $('historyList').innerHTML = '';
     try {
       const r = await api({ action:'getHistory' });
-      allHistory = r.data || [];
+      allHistory = (r.data || []).map(normalizeHistoryItemClient);
+      // 金額・カテゴリは全履歴から画面側でも再計算し、古い集計結果に依存しない。
       analytics = {
-        periods:r.periods || {month:r.summary},
-        trends:r.trends || {},
-        monthlySummaries:r.monthlySummaries || buildMonthlySummariesClient(allHistory)
+        periods:buildPeriodsClient(allHistory),
+        trends:buildTrendsClient(allHistory),
+        monthlySummaries:buildMonthlySummariesClient(allHistory)
       };
       const availableMonths = analytics.monthlySummaries.map(x => x.month);
       if(!selectedMonth || (!availableMonths.includes(selectedMonth) && availableMonths.length)) selectedMonth = availableMonths[0];
@@ -601,7 +721,10 @@
     $('trendList').innerHTML = trend.slice(-8).map(x => `<div class="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] items-center"><span class="font-bold text-slate-500">${escapeHtml(x.label)}</span><span class="text-emerald-600">入 ${money(x.income)}</span><span class="text-rose-600">出 ${money(x.expense)}</span></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">データがありません</p>';
 
     const cats = Object.entries(s.categories || {}).sort((a,b) => b[1] - a[1]);
-    $('categoryList').innerHTML = cats.map(([n,v]) => `<div><div class="flex justify-between text-[11px] mb-1"><b>${escapeHtml(n)}</b><span>${money(v)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${s.expense ? Math.max(2, v / s.expense * 100) : 0}%"></div></div></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">支出データがありません</p>';
+    $('categoryList').innerHTML = cats.map(([n,v]) => {
+      const count = Number((s.categoryCounts || {})[n] || 0);
+      return `<div><div class="flex justify-between text-[11px] mb-1"><b>${escapeHtml(n)} <span class="font-normal text-[9px] text-slate-400">${count}件</span></b><span>${money(v)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${s.expense ? Math.max(2, v / s.expense * 100) : 0}%"></div></div></div>`;
+    }).join('') || '<p class="text-xs text-slate-400 text-center py-3">支出データがありません</p>';
   }
 
 
@@ -621,8 +744,9 @@
         if(item.sourceSheet === '一般用') s.general += amount;
         if(item.sourceSheet === '医療費用') s.medical += amount;
         if(item.sourceSheet === '固定支払') s.fixed += amount;
-        const category = item.category || '未分類';
+        const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
         s.categories[category] = (s.categories[category] || 0) + amount;
+        s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
       }
       s.balance = s.income - s.expense;
     });
@@ -652,12 +776,15 @@
     $('monthlyFixed').textContent = money(summary.fixed);
 
     const categories = Object.entries(summary.categories || {}).sort((a,b) => b[1] - a[1]);
-    $('monthlyCategoryList').innerHTML = categories.map(([name,value]) => `<div><div class="flex justify-between text-[10px] mb-1"><b class="text-slate-600">${escapeHtml(name)}</b><span>${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${summary.expense ? Math.max(2, value / summary.expense * 100) : 0}%"></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-2">この月の支出はありません</p>';
+    $('monthlyCategoryList').innerHTML = categories.map(([name,value]) => {
+      const count = Number((summary.categoryCounts || {})[name] || 0);
+      return `<div><div class="flex justify-between text-[10px] mb-1"><b class="text-slate-600">${escapeHtml(name)} <span class="font-normal text-[8px] text-slate-400">${count}件</span></b><span>${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${summary.expense ? Math.max(2, value / summary.expense * 100) : 0}%"></div></div></div>`;
+    }).join('') || '<p class="text-[11px] text-slate-400 text-center py-2">この月の支出はありません</p>';
 
     const expenses = allHistory.filter(item => String(item.date || '').slice(0,7) === selectedMonth && !(item.type === '収入' || item.sourceSheet === '収入用'));
     $('monthlyExpenseCount').textContent = `${expenses.length}件`;
     const shown = expenses.slice(0, monthlyDisplayCount);
-    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(item.category || '未分類')}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
+    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
     $('monthlyMoreButton').classList.toggle('hidden', expenses.length <= monthlyDisplayCount);
     lucide.createIcons();
   }
@@ -705,7 +832,7 @@
     $('historyList').innerHTML = shown.map(item => {
       const income = item.type === '収入' || item.sourceSheet === '収入用';
       const encoded = encodeURIComponent(item.recordId || '');
-      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(item.category || '未分類')}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
+      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
     }).join('') || '<div class="text-center text-xs text-slate-400 py-12">条件に該当する履歴がありません</div>';
     $('moreButton').classList.toggle('hidden', list.length <= displayCount);
     lucide.createIcons();
