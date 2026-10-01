@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.9</title>
+  <title>領収書・収支管理 - YUZU Production v3.9.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -36,7 +36,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9.1</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -116,7 +116,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳 <span class="font-normal text-[9px] text-slate-400">店舗名を優先して集計</span></h3><div id="categoryList" class="space-y-3"></div></div>
 
 
-      <!-- v3.9 ビジュアル分析 -->
+      <!-- v3.9.1 ビジュアル分析 -->
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
@@ -153,7 +153,7 @@
         </div>
       </div>
 
-      <!-- v3.9 AIマネーコンサル -->
+      <!-- v3.9.1 AIマネーコンサル -->
       <div class="bg-gradient-to-br from-indigo-950 to-indigo-700 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/40 mb-4">
         <div class="flex items-start gap-3">
           <span class="p-2.5 rounded-2xl bg-white/10"><i data-lucide="brain-circuit" class="w-5 h-5 text-emerald-300"></i></span>
@@ -236,6 +236,22 @@
     <!-- 固定支払 -->
     <section id="tab-fixed" class="hidden p-4 min-h-full">
       <h2 class="font-bold text-sm flex gap-2 items-center mb-4"><span class="p-2 rounded-lg bg-amber-100 text-amber-600"><i data-lucide="calendar-clock" class="w-5 h-5"></i></span>固定支払の登録</h2>
+
+      <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4">
+        <p class="text-xs font-black text-amber-900 flex items-center gap-2"><i data-lucide="scan-line" class="w-4 h-4"></i>写真・画像から固定支払を読み取る</p>
+        <p class="text-[10px] text-amber-700 mt-1 leading-relaxed">電気料金の請求書・通信費・保険料などを撮影すると、支払項目・金額・日付をAIが入力します。保存前に必ず確認できます。</p>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button id="fixedCameraButton" class="h-11 rounded-xl bg-white border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i>カメラ</button>
+          <button id="fixedGalleryButton" class="h-11 rounded-xl bg-white border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i>画像を選択</button>
+        </div>
+        <input id="fixedCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+        <input id="fixedGalleryInput" type="file" accept="image/*" class="hidden">
+        <div id="fixedImageArea" class="hidden mt-3 space-y-3">
+          <div class="relative rounded-xl overflow-hidden bg-slate-900"><img id="fixedImagePreview" class="w-full h-44 object-contain"><button id="clearFixedImageButton" type="button" class="absolute top-2 right-2 p-2 rounded-full bg-black/60 text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+          <button id="fixedOcrButton" class="w-full h-11 rounded-xl bg-amber-500 text-white text-xs font-black flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>AIで固定支払を読み取る</button>
+        </div>
+      </div>
+
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
         <label class="label">支払項目<select id="fixedItem" class="field mt-1"></select></label>
         <label id="newFixedWrap" class="label hidden">新しい項目名<input id="newFixedItem" class="field mt-1" placeholder="例：サブスク代"></label>
@@ -244,6 +260,18 @@
         <label class="label">用途・使途<input id="fixedPurpose" list="purposeOptionsList" class="field mt-1" placeholder="例：生活費"></label>
       </div>
       <button id="saveFixedButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>固定支払を記録</span></button>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4 mb-5">
+        <div>
+          <h3 class="font-bold text-sm flex gap-2 items-center"><i data-lucide="list-plus" class="w-5 h-5 text-indigo-600"></i>支払項目マスター</h3>
+          <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">追加した項目はGoogleスプレッドシートに保存され、次回以降もPC・スマホ共通で表示します。追加項目は修正・削除できます。</p>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] gap-2">
+          <input id="fixedMasterNewItem" class="field" maxlength="60" placeholder="例：ガス代、水道代、サブスク代">
+          <button id="addFixedMasterButton" class="px-4 rounded-xl bg-indigo-600 text-white text-xs font-bold">追加</button>
+        </div>
+        <div id="fixedMasterList" class="space-y-2"></div>
+      </div>
     </section>
 
     <!-- 設定・取込 -->
@@ -357,6 +385,10 @@
   let imageData = '';
   let imageMime = '';
   let pendingOcrData = null;
+  let fixedImageData = '';
+  let fixedImageMime = '';
+  let fixedItemOptions = ['家賃','電気代金','電話・スマホ・ネット代','パソコン代金','自動車保険','借り受け金','車両代金'];
+  let customFixedItemOptions = [];
   let purposeOptions = ['生活費','旅行・観光','プライベート物','子どものため','嫁のため','医療・健康','仕事・事業','趣味・娯楽','自己投資','貯蓄・予備費','その他'];
   let customPurposeOptions = [];
   let visualPeriodDays = 30;
@@ -618,6 +650,7 @@
     ['scan','history','fixed','settings'].forEach(x => $('tab-'+x).classList.toggle('hidden', x !== name));
     document.querySelectorAll('.tab-button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     if(name === 'history') loadHistory();
+    if(name === 'fixed') loadFixedItems();
     if(name === 'settings' && connected()) { loadDeleted(); loadPurposes(); }
   };
   document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -801,13 +834,168 @@
     } catch(e) { toast(e.message, true); }
   });
 
-  const defaultFixed = ['家賃','電話・スマホ・ネット代','パソコン代金','自動車保険','借り受け金','車両代金'];
-  function fixedItems(){ return JSON.parse(localStorage.getItem('yuzuFixedItems') || JSON.stringify(defaultFixed)); }
-  function renderFixedItems(){
-    const items = fixedItems();
-    $('fixedItem').innerHTML = '<option value="">選択してください</option>' + items.map(x => `<option>${escapeHtml(x)}</option>`).join('') + '<option value="__new__">その他（新規）</option>';
+  function fixedItems(){ return fixedItemOptions.slice(); }
+  function renderFixedItems(selected=''){
+    const items = Array.from(new Set((fixedItemOptions || []).map(x => String(x || '').trim()).filter(Boolean)));
+    $('fixedItem').innerHTML = '<option value="">選択してください</option>' + items.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('') + '<option value="__new__">その他（新規）</option>';
+    if(selected && items.includes(selected)) $('fixedItem').value = selected;
+    if($('fixedMasterList')){
+      $('fixedMasterList').innerHTML = items.map(x => {
+        const custom = customFixedItemOptions.includes(x);
+        const encoded = encodeURIComponent(x);
+        return `<div class="flex items-center justify-between gap-2 rounded-xl border ${custom ? 'border-indigo-100 bg-indigo-50/40' : 'border-slate-100 bg-slate-50'} px-3 py-2.5"><span class="text-xs font-bold text-slate-700 min-w-0 truncate">${escapeHtml(x)}</span>${custom ? `<div class="flex gap-1 shrink-0"><button type="button" class="px-2.5 py-1.5 rounded-lg bg-white border border-indigo-100 text-[10px] font-bold text-indigo-600" onclick="editFixedMaster('${encoded}')">修正</button><button type="button" class="px-2.5 py-1.5 rounded-lg bg-white border border-red-100 text-[10px] font-bold text-red-500" onclick="deleteFixedMaster('${encoded}')">削除</button></div>` : '<span class="text-[9px] font-bold text-slate-400">標準</span>'}</div>`;
+      }).join('');
+    }
   }
+
+  async function migrateLegacyFixedItems(){
+    if(!connected() || localStorage.getItem('yuzuFixedItemsMigrated391') === '1') return;
+    try{
+      const legacy = JSON.parse(localStorage.getItem('yuzuFixedItems') || '[]');
+      if(Array.isArray(legacy)){
+        for(const raw of legacy){
+          const item = String(raw || '').trim();
+          if(!item || fixedItemOptions.includes(item)) continue;
+          const r = await api({action:'add_fixed_item', item});
+          fixedItemOptions = r.items || fixedItemOptions.concat([item]);
+          customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
+        }
+      }
+      localStorage.setItem('yuzuFixedItemsMigrated391', '1');
+    }catch(e){}
+  }
+
+  async function loadFixedItems(){
+    if(!connected()){ renderFixedItems(); return; }
+    try{
+      const r = await api({action:'get_fixed_items'});
+      fixedItemOptions = Array.isArray(r.items) && r.items.length ? r.items : fixedItemOptions;
+      customFixedItemOptions = Array.isArray(r.customItems) ? r.customItems : [];
+      await migrateLegacyFixedItems();
+      renderFixedItems($('fixedItem').value);
+    }catch(e){ renderFixedItems(); }
+  }
+
+  async function ensureFixedItemRegistered(value){
+    const item = String(value || '').trim();
+    if(!item || fixedItemOptions.includes(item) || !connected()) return;
+    const r = await api({action:'add_fixed_item', item});
+    fixedItemOptions = r.items || fixedItemOptions.concat([item]);
+    customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
+    renderFixedItems(item);
+  }
+
+  $('addFixedMasterButton').onclick = () => withButton($('addFixedMasterButton'), '追加中...', async () => {
+    const item = $('fixedMasterNewItem').value.trim();
+    if(!item) return toast('追加する支払項目を入力してください。', true);
+    try{
+      const r = await api({action:'add_fixed_item', item});
+      fixedItemOptions = r.items || fixedItemOptions;
+      customFixedItemOptions = r.customItems || customFixedItemOptions;
+      $('fixedMasterNewItem').value = '';
+      renderFixedItems(item);
+      toast('支払項目を追加しました。次回から自動で表示されます。');
+    }catch(e){ toast(e.message, true); }
+  });
+
+  window.editFixedMaster = async function(encoded){
+    const oldItem = decodeURIComponent(encoded);
+    const next = prompt('支払項目を修正してください。', oldItem);
+    if(next === null) return;
+    const newItem = next.trim();
+    if(!newItem || newItem === oldItem) return;
+    try{
+      const r = await api({action:'update_fixed_item', oldItem, newItem});
+      fixedItemOptions = r.items || fixedItemOptions;
+      customFixedItemOptions = r.customItems || customFixedItemOptions;
+      renderFixedItems(newItem);
+      toast('支払項目を修正しました。');
+    }catch(e){ toast(e.message, true); }
+  };
+
+  window.deleteFixedMaster = async function(encoded){
+    const item = decodeURIComponent(encoded);
+    if(!confirm(`支払項目「${item}」を候補から削除しますか？\n過去に保存した固定支払データは削除されません。`)) return;
+    try{
+      const r = await api({action:'delete_fixed_item', item});
+      fixedItemOptions = r.items || fixedItemOptions.filter(x => x !== item);
+      customFixedItemOptions = r.customItems || customFixedItemOptions.filter(x => x !== item);
+      renderFixedItems();
+      toast('支払項目を候補から削除しました。');
+    }catch(e){ toast(e.message, true); }
+  };
+
   $('fixedItem').onchange = () => $('newFixedWrap').classList.toggle('hidden', $('fixedItem').value !== '__new__');
+
+  function clearFixedImage(){
+    fixedImageData = '';
+    fixedImageMime = '';
+    $('fixedImageArea').classList.add('hidden');
+    $('fixedCameraInput').value = '';
+    $('fixedGalleryInput').value = '';
+  }
+  $('fixedCameraButton').onclick = () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    $('fixedCameraInput').click();
+  };
+  $('fixedGalleryButton').onclick = () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    $('fixedGalleryInput').click();
+  };
+  $('clearFixedImageButton').onclick = clearFixedImage;
+  ['fixedCameraInput','fixedGalleryInput'].forEach(id => $(id).addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')) return toast('画像ファイルを選択してください。', true);
+    if(file.size > 12 * 1024 * 1024) return toast('画像が大きすぎます。12MB以下にしてください。', true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      fixedImageData = reader.result.split(',')[1];
+      fixedImageMime = file.type;
+      $('fixedImagePreview').src = reader.result;
+      $('fixedImageArea').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }));
+
+  $('fixedOcrButton').onclick = () => withButton($('fixedOcrButton'), 'AIが読み取り中...', async () => {
+    if(!fixedImageData) return toast('固定支払の画像を選択してください。', true);
+    try{
+      const knownItems = fixedItems().join('、');
+      const instruction = `固定費・請求書・支払通知の画像を読み取り、JSONだけを返してください。候補の支払項目は「${knownItems}」。電力会社・電気料金・電気使用量の請求は必ず「電気代金」に分類してください。電話・携帯・インターネットは「電話・スマホ・ネット代」、自動車保険は「自動車保険」。候補に合わない場合は画像から分かる短い支払項目名を作ってください。日付は請求日より支払期限・口座振替日が明確ならそれを優先し、YYYY-MM-DD。合計請求額をamountにしてください。purposeは通常「生活費」。保存はせず、入力欄に反映するための読取です。`;
+      const payload = {
+        contents:[{parts:[{text:instruction},{inlineData:{mimeType:fixedImageMime,data:fixedImageData}}]}],
+        generationConfig:{
+          responseMimeType:'application/json',
+          responseSchema:{
+            type:'OBJECT',
+            properties:{
+              fixedItem:{type:'STRING'}, date:{type:'STRING'}, amount:{type:'NUMBER'}, purpose:{type:'STRING'}, details:{type:'STRING'}
+            },
+            required:['fixedItem','date','amount']
+          }
+        }
+      };
+      const result = await api({action:'call_gemini', payload});
+      const text = result.result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text) throw new Error('AIの読取結果が空です。画像を撮り直してください。');
+      const data = JSON.parse(text);
+      const item = String(data.fixedItem || '').trim();
+      if(item && fixedItemOptions.includes(item)){
+        renderFixedItems(item);
+        $('newFixedWrap').classList.add('hidden');
+      }else if(item){
+        $('fixedItem').value = '__new__';
+        $('newFixedWrap').classList.remove('hidden');
+        $('newFixedItem').value = item;
+      }
+      $('fixedAmount').value = Number(data.amount) || '';
+      $('fixedDate').value = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || '')) ? data.date : todayString();
+      $('fixedPurpose').value = String(data.purpose || '生活費').trim() || '生活費';
+      toast('固定支払を読み取りました。内容を確認してから保存してください。');
+    }catch(e){ toast('固定支払のAI読取エラー: ' + e.message, true); }
+  });
+
   $('saveFixedButton').onclick = () => withButton($('saveFixedButton'), '保存中...', async () => {
     let item = $('fixedItem').value;
     if(item === '__new__') item = $('newFixedItem').value.trim();
@@ -815,12 +1003,11 @@
     try {
       const result = await saveWithDuplicateCheck(data);
       if(!result) return;
-      if($('fixedItem').value === '__new__' && item){
-        const arr = fixedItems();
-        if(!arr.includes(item)) { arr.push(item); localStorage.setItem('yuzuFixedItems', JSON.stringify(arr)); renderFixedItems(); }
-      }
+      if($('fixedItem').value === '__new__' && item) await ensureFixedItemRegistered(item);
       await ensurePurposeRegistered(data.purpose);
       $('fixedAmount').value = '';
+      $('newFixedItem').value = '';
+      clearFixedImage();
       toast('固定支払を保存しました。');
     } catch(e) { toast(e.message, true); }
   });
@@ -1341,6 +1528,7 @@ JSONのみを返してください。`;
       toast(`接続成功（${r.version || 'GAS'}）。URLを保存しました。`);
       loadDeleted();
       loadPurposes();
+      loadFixedItems();
     } catch(e) {
       if(previousUrl) localStorage.setItem('yuzuGasUrl', previousUrl);
       else localStorage.removeItem('yuzuGasUrl');
@@ -1497,6 +1685,7 @@ JSONのみを返してください。`;
   $('ocrDate').value = todayString();
   $('gasUrl').value = localStorage.getItem('yuzuGasUrl') || '';
   renderFixedItems();
+  loadFixedItems();
   updateManualType();
   updateMode();
   lucide.createIcons();
