@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.8</title>
+  <title>領収書・収支管理 - YUZU Production v3.9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Noto Sans JP', sans-serif; background:#eef2f7; overscroll-behavior-y:none; }
@@ -35,7 +36,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.8</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -74,6 +75,10 @@
           <label id="patientWrap" class="label hidden">患者名<input id="manualPatient" class="field mt-1"></label>
           <label class="label">金額<input id="manualAmount" type="number" min="1" class="field mt-1" placeholder="0"></label>
           <label class="label">カテゴリ<select id="manualCategory" class="field mt-1"></select></label>
+          <label class="label">用途・使途
+            <input id="manualPurpose" list="purposeOptionsList" class="field mt-1" placeholder="選択または自由入力（例：旅行・観光）">
+            <span class="block text-[9px] font-normal text-slate-400 mt-1">新しい用途を入力して保存すると、次回から候補に追加されます。</span>
+          </label>
           <label class="label">内容・摘要<input id="manualItems" class="field mt-1" placeholder="任意"></label>
         </div>
         <button id="saveManualButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>保存する</span></button>
@@ -110,6 +115,67 @@
 
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳 <span class="font-normal text-[9px] text-slate-400">店舗名を優先して集計</span></h3><div id="categoryList" class="space-y-3"></div></div>
 
+
+      <!-- v3.9 ビジュアル分析 -->
+      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 class="text-xs font-black text-slate-700 flex items-center gap-1"><i data-lucide="chart-pie" class="w-4 h-4 text-indigo-600"></i>ビジュアル分析</h3>
+            <p class="text-[10px] text-slate-400 mt-1">現在の期間別推移は残したまま、支出の構造をグラフで確認できます。</p>
+          </div>
+          <span id="visualRangeLabel" class="text-[9px] font-black text-indigo-600 bg-indigo-50 rounded-full px-2 py-1 whitespace-nowrap">30日</span>
+        </div>
+        <div class="flex gap-1.5 overflow-auto hidden-scroll pb-2 mb-2">
+          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="7">1週間</button>
+          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="14">2週間</button>
+          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="21">3週間</button>
+          <button class="visual-period-button active whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-indigo-600 bg-indigo-600 text-white" data-days="30">1か月</button>
+          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="180">180日</button>
+        </div>
+        <div id="visualKpis" class="grid grid-cols-2 gap-2 mb-4"></div>
+        <div class="space-y-4">
+          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
+            <p class="text-[10px] font-bold text-slate-600 mb-2">収入・支出の推移（折れ線）</p>
+            <div class="h-52"><canvas id="cashflowLineChart"></canvas></div>
+          </div>
+          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
+            <p class="text-[10px] font-bold text-slate-600 mb-2">カテゴリ別支出（円グラフ）</p>
+            <div class="h-56"><canvas id="categoryPieChart"></canvas></div>
+          </div>
+          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
+            <p class="text-[10px] font-bold text-slate-600 mb-2">用途・使途別支出（棒グラフ）</p>
+            <div class="h-56"><canvas id="purposeBarChart"></canvas></div>
+          </div>
+        </div>
+        <div class="border-t border-slate-100 mt-4 pt-3">
+          <p class="text-[10px] font-bold text-slate-500 mb-2">支出先 TOP5</p>
+          <div id="topStoreList" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- v3.9 AIマネーコンサル -->
+      <div class="bg-gradient-to-br from-indigo-950 to-indigo-700 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/40 mb-4">
+        <div class="flex items-start gap-3">
+          <span class="p-2.5 rounded-2xl bg-white/10"><i data-lucide="brain-circuit" class="w-5 h-5 text-emerald-300"></i></span>
+          <div class="min-w-0">
+            <h3 class="text-sm font-black">AI マネーコンサルタント</h3>
+            <p class="text-[10px] text-indigo-200 mt-1 leading-relaxed">支出傾向を読み、「減らす候補」「維持したい支出」「別用途へ回せる金額」「次にやること」を具体化します。</p>
+            <p class="text-[9px] text-indigo-200/80 mt-1 leading-relaxed">AI診断時は、選択期間の集計値と直近最大40件の支出情報をGemini APIへ送信して分析します。</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] gap-2 mt-4">
+          <select id="aiMoneyPeriod" class="w-full p-3 text-xs rounded-xl bg-white text-slate-900 border-0 outline-none">
+            <option value="7">1週間（7日）</option>
+            <option value="14">2週間（14日）</option>
+            <option value="21">3週間（21日）</option>
+            <option value="30" selected>1か月（30日）</option>
+            <option value="180">180日</option>
+          </select>
+          <button id="runMoneyConsultantButton" class="px-4 rounded-xl bg-emerald-400 text-emerald-950 text-[11px] font-black whitespace-nowrap">AI診断</button>
+        </div>
+        <p class="text-[9px] text-indigo-200 mt-2">家計改善の参考情報です。医療・生活必需・家族支出を金額だけで機械的に削減対象にはしません。</p>
+        <div id="moneyConsultantResult" class="hidden mt-4 bg-white/10 border border-white/10 rounded-2xl p-4 text-[11px] leading-relaxed"></div>
+      </div>
 
 
       <!-- 任意月の集計・支出履歴 -->
@@ -150,7 +216,7 @@
 
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4 space-y-3">
         <div class="flex items-center justify-between"><h3 class="text-xs font-bold text-slate-600 flex items-center gap-1"><i data-lucide="search" class="w-4 h-4"></i>履歴を検索・期間指定</h3><span id="historyCount" class="text-[10px] font-bold text-indigo-600">0件</span></div>
-        <input id="historySearch" class="field" placeholder="店舗名・カテゴリ・内容で検索">
+        <input id="historySearch" class="field" placeholder="店舗名・カテゴリ・用途・内容で検索">
         <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">開始日<input id="historyFrom" type="date" class="field mt-1"></label><label class="text-[10px] font-bold text-slate-400">終了日<input id="historyTo" type="date" class="field mt-1"></label></div>
         <button id="clearHistoryFilter" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-[11px] font-bold text-slate-600">検索条件をクリア</button>
       </div>
@@ -175,6 +241,7 @@
         <label id="newFixedWrap" class="label hidden">新しい項目名<input id="newFixedItem" class="field mt-1" placeholder="例：サブスク代"></label>
         <label class="label">金額<input id="fixedAmount" type="number" min="1" class="field mt-1"></label>
         <label class="label">支払日<input id="fixedDate" type="date" class="field mt-1"></label>
+        <label class="label">用途・使途<input id="fixedPurpose" list="purposeOptionsList" class="field mt-1" placeholder="例：生活費"></label>
       </div>
       <button id="saveFixedButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>固定支払を記録</span></button>
     </section>
@@ -188,6 +255,19 @@
         <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>接続確認して保存</button>
       </div>
 
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
+        <div>
+          <h3 class="font-bold text-sm flex gap-2 items-center"><i data-lucide="tags" class="w-5 h-5 text-indigo-600"></i>用途・使途マスター</h3>
+          <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">領収書保存前に選べる候補です。ここから追加した用途はパソコン・スマホで共通利用できます。</p>
+        </div>
+        <div class="grid grid-cols-[1fr_auto] gap-2">
+          <input id="newPurposeMaster" class="field" maxlength="40" placeholder="例：孫のため、旅行積立">
+          <button id="addPurposeMasterButton" class="px-4 rounded-xl bg-indigo-600 text-white text-xs font-bold">追加</button>
+        </div>
+        <div id="purposeMasterList" class="flex flex-wrap gap-2"></div>
+      </div>
+
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
         <div><h3 class="font-bold text-sm flex gap-2"><i data-lucide="file-up" class="w-5 h-5 text-indigo-600"></i>過去データを取り込む</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">CSV・Excel（.xlsx/.xls）または、同じGoogleアカウントで開けるスプレッドシートから取り込めます。見出し名と旧7列形式を自動判定します。</p></div>
         <input id="importFile" type="file" accept=".csv,.xlsx,.xls" class="block w-full text-xs file:mr-3 file:py-2.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-bold">
@@ -199,9 +279,9 @@
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4">
-        <div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>安全管理・メンテナンス</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">バックアップ作成、列ズレ点検、削除データの復元ができます。</p></div>
+        <div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>安全管理・メンテナンス</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">バックアップ作成、用途列を含む列ズレ点検、削除データの復元ができます。</p></div>
         <button id="backupButton" class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl py-3 text-xs font-bold">現在のスプレッドシートをバックアップ</button>
-        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">見出し・管理IDを点検</button>
+        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">見出し・管理ID・用途列を点検</button>
         <div id="maintenanceResult" class="hidden text-xs rounded-xl p-3 bg-slate-50 text-slate-700 border border-slate-200 leading-relaxed"></div>
       </div>
 
@@ -211,6 +291,8 @@
       </div>
     </section>
   </main>
+
+  <datalist id="purposeOptionsList"></datalist>
 
   <nav class="absolute bottom-0 w-full h-16 bg-white border-t border-slate-100 flex z-20">
     <button class="tab-button active flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="scan"><i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px]">入力</span></button>
@@ -232,6 +314,7 @@
       <input id="ocrConfirmPatient" class="field" placeholder="患者名（医療費のみ）">
       <input id="ocrConfirmAmount" type="number" min="1" class="field" placeholder="金額">
       <select id="ocrConfirmCategory" class="field"></select>
+      <input id="ocrConfirmPurpose" list="purposeOptionsList" class="field" placeholder="用途・使途（選択または自由入力）">
       <input id="ocrConfirmItems" class="field" placeholder="内容・摘要">
     </div>
     <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeOcrConfirm()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">戻って撮り直す</button><button id="saveOcrConfirmButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold flex justify-center items-center gap-2">確認して保存</button></div>
@@ -245,7 +328,7 @@
     <input id="editRecordId" type="hidden"><input id="editSheet" type="hidden">
     <div class="space-y-3">
       <select id="editType" class="field"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入</option><option value="書類">その他支出</option></select>
-      <input id="editDate" type="date" class="field"><input id="editStore" class="field" placeholder="店舗・支払先・収入元"><input id="editPatient" class="field" placeholder="患者名"><input id="editAmount" type="number" class="field"><input id="editCategory" class="field" placeholder="カテゴリ"><input id="editItems" class="field" placeholder="内容・摘要">
+      <input id="editDate" type="date" class="field"><input id="editStore" class="field" placeholder="店舗・支払先・収入元"><input id="editPatient" class="field" placeholder="患者名"><input id="editAmount" type="number" class="field"><input id="editCategory" class="field" placeholder="カテゴリ"><input id="editPurpose" list="purposeOptionsList" class="field" placeholder="用途・使途"><input id="editItems" class="field" placeholder="内容・摘要">
     </div>
     <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeEdit()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">キャンセル</button><button id="saveEditButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold">保存</button></div>
   </div>
@@ -274,11 +357,15 @@
   let imageData = '';
   let imageMime = '';
   let pendingOcrData = null;
+  let purposeOptions = ['生活費','旅行・観光','プライベート物','子どものため','嫁のため','医療・健康','仕事・事業','趣味・娯楽','自己投資','貯蓄・予備費','その他'];
+  let customPurposeOptions = [];
+  let visualPeriodDays = 30;
+  const chartInstances = {};
 
   const expenseCategories = ['食費','外食','ドラックストア','コンビニ','日用品','消耗品費','交通費','通信費','接待交際費','診療・治療','医薬品購入','固定費','その他'];
   const incomeCategories = ['売上','給与','年金','給付金','返金','その他収入'];
 
-  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, categoryCounts:{}, count:0 }; }
+  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, categoryCounts:{}, purposes:{}, purposeCounts:{}, count:0 }; }
   function money(v){ return '¥' + Number(v || 0).toLocaleString(); }
   function todayString(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
   function canonicalCategoryLabelClient(value){
@@ -321,6 +408,7 @@
       out.type = oldDate;
     }
     out.category = normalizeCategoryClient(out.category, out.store, out.sourceSheet, out.type);
+    out.purpose = String(out.purpose || '').trim();
     out.amount = Number(out.amount || 0);
     return out;
   }
@@ -344,6 +432,9 @@
         const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
         s.categories[category] = (s.categories[category] || 0) + amount;
         s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
+        const purpose = String(item.purpose || '未設定').trim() || '未設定';
+        s.purposes[purpose] = (s.purposes[purpose] || 0) + amount;
+        s.purposeCounts[purpose] = (s.purposeCounts[purpose] || 0) + 1;
       }
     });
     s.balance = s.income - s.expense;
@@ -477,11 +568,57 @@
     $('savedPlace').textContent = ok ? 'Googleスプレッドシートに保存されました' : '保存先が未設定です';
   }
 
+  function renderPurposeOptions(){
+    const list = Array.from(new Set((purposeOptions || []).map(x => String(x || '').trim()).filter(Boolean)));
+    $('purposeOptionsList').innerHTML = list.map(x => `<option value="${escapeHtml(x)}"></option>`).join('');
+    if($('purposeMasterList')){
+      $('purposeMasterList').innerHTML = list.map(x => {
+        const custom = customPurposeOptions.includes(x);
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border ${custom ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-600'} text-[10px] font-bold">${escapeHtml(x)}${custom ? `<button type="button" class="ml-1 text-slate-400 hover:text-red-500" onclick="deletePurposeMaster('${encodeURIComponent(x)}')" title="削除">×</button>` : ''}</span>`;
+      }).join('');
+    }
+  }
+
+  async function loadPurposes(){
+    if(!connected()) { renderPurposeOptions(); return; }
+    try {
+      const r = await api({action:'get_purposes'});
+      purposeOptions = Array.isArray(r.purposes) && r.purposes.length ? r.purposes : purposeOptions;
+      customPurposeOptions = Array.isArray(r.customPurposes) ? r.customPurposes : [];
+      renderPurposeOptions();
+    } catch(e) {
+      renderPurposeOptions();
+    }
+  }
+
+  async function ensurePurposeRegistered(value){
+    const purpose = String(value || '').trim();
+    if(!purpose || purposeOptions.includes(purpose) || !connected()) return;
+    try {
+      const r = await api({action:'add_purpose', purpose});
+      purposeOptions = r.purposes || purposeOptions.concat([purpose]);
+      customPurposeOptions = r.customPurposes || customPurposeOptions.concat([purpose]);
+      renderPurposeOptions();
+    } catch(e) {}
+  }
+
+  window.deletePurposeMaster = async function(encoded){
+    const purpose = decodeURIComponent(encoded);
+    if(!confirm(`用途「${purpose}」を候補から削除しますか？\n過去の領収書データは削除されません。`)) return;
+    try {
+      const r = await api({action:'delete_purpose', purpose});
+      purposeOptions = r.purposes || purposeOptions.filter(x => x !== purpose);
+      customPurposeOptions = r.customPurposes || customPurposeOptions.filter(x => x !== purpose);
+      renderPurposeOptions();
+      toast('用途候補を削除しました。');
+    } catch(e) { toast(e.message, true); }
+  };
+
   window.switchTab = function(name){
     ['scan','history','fixed','settings'].forEach(x => $('tab-'+x).classList.toggle('hidden', x !== name));
     document.querySelectorAll('.tab-button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     if(name === 'history') loadHistory();
-    if(name === 'settings' && connected()) loadDeleted();
+    if(name === 'settings' && connected()) { loadDeleted(); loadPurposes(); }
   };
   document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -576,12 +713,13 @@
       store:$('manualStore').value.trim(),
       amount:Number($('manualAmount').value),
       category:$('manualCategory').value,
+      purpose:$('manualPurpose').value.trim(),
       items:$('manualItems').value.trim() || '-',
       patientName:$('manualPatient').value.trim()
     };
     try {
       const result = await saveWithDuplicateCheck(data);
-      if(result) showSaved();
+      if(result) { await ensurePurposeRegistered(data.purpose); showSaved(); }
     } catch(e) { toast(e.message, true); }
   });
 
@@ -632,6 +770,7 @@
     $('ocrConfirmPatient').value = data.patientName || '';
     $('ocrConfirmAmount').value = data.amount || '';
     fillCategories($('ocrConfirmCategory'), data.type, data.category || 'その他');
+    $('ocrConfirmPurpose').value = data.purpose || '';
     $('ocrConfirmItems').value = data.items === '-' ? '' : (data.items || '');
     $('ocrConfirmModal').classList.remove('hidden');
     $('ocrConfirmModal').classList.add('flex');
@@ -649,11 +788,13 @@
       patientName:$('ocrConfirmPatient').value.trim(),
       amount:Number($('ocrConfirmAmount').value),
       category:$('ocrConfirmCategory').value,
+      purpose:$('ocrConfirmPurpose').value.trim(),
       items:$('ocrConfirmItems').value.trim() || '-'
     };
     try {
       const result = await saveWithDuplicateCheck(data);
       if(result) {
+        await ensurePurposeRegistered(data.purpose);
         closeOcrConfirm();
         showSaved();
       }
@@ -670,7 +811,7 @@
   $('saveFixedButton').onclick = () => withButton($('saveFixedButton'), '保存中...', async () => {
     let item = $('fixedItem').value;
     if(item === '__new__') item = $('newFixedItem').value.trim();
-    const data = { type:'固定支払', date:$('fixedDate').value, store:item, amount:Number($('fixedAmount').value), category:'固定費', items:item, patientName:'' };
+    const data = { type:'固定支払', date:$('fixedDate').value, store:item, amount:Number($('fixedAmount').value), category:'固定費', items:item, patientName:'', purpose:$('fixedPurpose').value.trim() || '生活費' };
     try {
       const result = await saveWithDuplicateCheck(data);
       if(!result) return;
@@ -678,6 +819,7 @@
         const arr = fixedItems();
         if(!arr.includes(item)) { arr.push(item); localStorage.setItem('yuzuFixedItems', JSON.stringify(arr)); renderFixedItems(); }
       }
+      await ensurePurposeRegistered(data.purpose);
       $('fixedAmount').value = '';
       toast('固定支払を保存しました。');
     } catch(e) { toast(e.message, true); }
@@ -699,6 +841,7 @@
       if(!selectedMonth || (!availableMonths.includes(selectedMonth) && availableMonths.length)) selectedMonth = availableMonths[0];
       $('monthlyHistoryMonth').value = selectedMonth;
       renderSummary();
+      renderVisualAnalytics();
       renderMonthlySection();
       renderHistory();
     } catch(e) { toast(e.message, true); }
@@ -728,6 +871,273 @@
   }
 
 
+
+  function recordsForLastDays(days){
+    const today = new Date();
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - Number(days) + 1);
+    return allHistory.filter(item => {
+      const d = parseYmdClient(item.date);
+      return d && d >= start && d < end;
+    });
+  }
+
+  function visualStats(days){
+    const records = recordsForLastDays(days);
+    const categories = {}, purposes = {}, stores = {};
+    let income = 0, expense = 0;
+    records.forEach(item => {
+      const amount = Number(item.amount || 0);
+      const isIncome = item.type === '収入' || item.sourceSheet === '収入用';
+      if(isIncome) { income += amount; return; }
+      expense += amount;
+      const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
+      const purpose = String(item.purpose || '未設定').trim() || '未設定';
+      const store = String(item.store || '名称なし').trim() || '名称なし';
+      categories[category] = (categories[category] || 0) + amount;
+      purposes[purpose] = (purposes[purpose] || 0) + amount;
+      stores[store] = (stores[store] || 0) + amount;
+    });
+    return {records, income, expense, balance:income-expense, categories, purposes, stores};
+  }
+
+  function topEntries(obj, limit=8){
+    return Object.entries(obj || {}).sort((a,b) => b[1] - a[1]).slice(0, limit);
+  }
+
+  function chartPalette(count){
+    const colors = ['#4f46e5','#0ea5e9','#14b8a6','#22c55e','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#8b5cf6','#64748b','#06b6d4'];
+    return Array.from({length:count}, (_,i) => colors[i % colors.length]);
+  }
+
+  function destroyChart(name){
+    if(chartInstances[name]) {
+      chartInstances[name].destroy();
+      delete chartInstances[name];
+    }
+  }
+
+  function buildCashflowSeries(days){
+    const today = new Date();
+    const useWeeks = Number(days) > 60;
+    const buckets = new Map();
+    const records = recordsForLastDays(days);
+
+    if(useWeeks){
+      for(let i=0;i<Math.ceil(days/7);i++){
+        const end = new Date(today.getFullYear(),today.getMonth(),today.getDate()-i*7+1);
+        const start = new Date(end.getFullYear(),end.getMonth(),end.getDate()-7);
+        const key = `${start.getMonth()+1}/${start.getDate()}`;
+        buckets.set(key,{label:key,start,end,income:0,expense:0});
+      }
+    } else {
+      for(let i=days-1;i>=0;i--){
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate()-i);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        buckets.set(key,{label:`${d.getMonth()+1}/${d.getDate()}`,date:key,income:0,expense:0});
+      }
+    }
+
+    records.forEach(item => {
+      const d = parseYmdClient(item.date);
+      if(!d) return;
+      let bucket = null;
+      if(useWeeks){
+        for(const b of buckets.values()){
+          if(d >= b.start && d < b.end){ bucket = b; break; }
+        }
+      } else {
+        bucket = buckets.get(item.date);
+      }
+      if(!bucket) return;
+      const amount = Number(item.amount || 0);
+      if(item.type === '収入' || item.sourceSheet === '収入用') bucket.income += amount;
+      else bucket.expense += amount;
+    });
+
+    const arr = Array.from(buckets.values());
+    if(useWeeks) arr.sort((a,b) => a.start - b.start);
+    return arr;
+  }
+
+  function renderVisualAnalytics(){
+    if(typeof Chart === 'undefined') return;
+    const days = Number(visualPeriodDays || 30);
+    const stats = visualStats(days);
+    $('visualRangeLabel').textContent = days === 30 ? '1か月' : `${days}日`;
+    const topCat = topEntries(stats.categories,1)[0];
+    const topPurpose = topEntries(stats.purposes,1)[0];
+    $('visualKpis').innerHTML = `
+      <div class="rounded-xl bg-rose-50 border border-rose-100 p-3"><p class="text-[9px] text-rose-500 font-bold">支出合計</p><p class="text-sm font-black text-rose-700 mt-1">${money(stats.expense)}</p><p class="text-[9px] text-rose-400 mt-1">1日平均 ${money(days ? Math.round(stats.expense/days) : 0)}</p></div>
+      <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3"><p class="text-[9px] text-emerald-600 font-bold">収入合計</p><p class="text-sm font-black text-emerald-700 mt-1">${money(stats.income)}</p><p class="text-[9px] text-emerald-500 mt-1">差引 ${money(stats.balance)}</p></div>
+      <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-3"><p class="text-[9px] text-indigo-500 font-bold">最多カテゴリ</p><p class="text-xs font-black text-indigo-800 mt-1 truncate">${escapeHtml(topCat?.[0] || 'データなし')}</p><p class="text-[9px] text-indigo-500 mt-1">${money(topCat?.[1] || 0)}</p></div>
+      <div class="rounded-xl bg-sky-50 border border-sky-100 p-3"><p class="text-[9px] text-sky-600 font-bold">最多用途</p><p class="text-xs font-black text-sky-800 mt-1 truncate">${escapeHtml(topPurpose?.[0] || '未設定')}</p><p class="text-[9px] text-sky-500 mt-1">${money(topPurpose?.[1] || 0)}</p></div>`;
+
+    const series = buildCashflowSeries(days);
+    destroyChart('line');
+    chartInstances.line = new Chart($('cashflowLineChart'), {
+      type:'line',
+      data:{
+        labels:series.map(x => x.label),
+        datasets:[
+          {label:'収入',data:series.map(x => x.income),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',tension:.25,pointRadius:days>60?1:2},
+          {label:'支出',data:series.map(x => x.expense),borderColor:'#f43f5e',backgroundColor:'rgba(244,63,94,.08)',tension:.25,pointRadius:days>60?1:2}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{font:{size:8},maxTicksLimit:days>60?8:10}},y:{beginAtZero:true,ticks:{font:{size:8},callback:v=>'¥'+Number(v).toLocaleString()}}}}
+    });
+
+    const cats = topEntries(stats.categories,8);
+    destroyChart('pie');
+    chartInstances.pie = new Chart($('categoryPieChart'), {
+      type:'pie',
+      data:{labels:cats.map(x=>x[0]),datasets:[{data:cats.map(x=>x[1]),backgroundColor:chartPalette(cats.length),borderWidth:1,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:9}}}}}
+    });
+
+    const purposes = topEntries(stats.purposes,8);
+    destroyChart('purpose');
+    chartInstances.purpose = new Chart($('purposeBarChart'), {
+      type:'bar',
+      data:{labels:purposes.map(x=>x[0]),datasets:[{label:'支出',data:purposes.map(x=>x[1]),backgroundColor:chartPalette(purposes.length)}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:8},callback:v=>'¥'+Number(v).toLocaleString()}},y:{ticks:{font:{size:9}}}}}
+    });
+
+    const stores = topEntries(stats.stores,5);
+    $('topStoreList').innerHTML = stores.map(([name,value],i) => `<div><div class="flex justify-between gap-2 text-[10px]"><span class="font-bold text-slate-600 truncate">${i+1}. ${escapeHtml(name)}</span><span class="font-black text-slate-700 shrink-0">${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full bg-indigo-500 rounded-full" style="width:${stats.expense ? Math.max(3,value/stats.expense*100) : 0}%"></div></div></div>`).join('') || '<p class="text-[10px] text-slate-400 text-center py-3">支出データがありません</p>';
+  }
+
+  document.querySelectorAll('.visual-period-button').forEach(btn => btn.onclick = () => {
+    document.querySelectorAll('.visual-period-button').forEach(x => {
+      x.classList.remove('bg-indigo-600','text-white','border-indigo-600','active');
+      x.classList.add('bg-white','text-slate-600','border-slate-200');
+    });
+    btn.classList.add('bg-indigo-600','text-white','border-indigo-600','active');
+    btn.classList.remove('bg-white','text-slate-600','border-slate-200');
+    visualPeriodDays = Number(btn.dataset.days || 30);
+    renderVisualAnalytics();
+  });
+
+  function previousPeriodStats(days){
+    const today = new Date();
+    const currentStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - Number(days) + 1);
+    const previousEnd = currentStart;
+    const previousStart = new Date(currentStart.getFullYear(), currentStart.getMonth(), currentStart.getDate() - Number(days));
+    const records = allHistory.filter(item => {
+      const d = parseYmdClient(item.date);
+      return d && d >= previousStart && d < previousEnd;
+    });
+    const categories = {}, purposes = {}, stores = {};
+    let income = 0, expense = 0;
+    records.forEach(item => {
+      const amount = Number(item.amount || 0);
+      const isIncome = item.type === '収入' || item.sourceSheet === '収入用';
+      if(isIncome) { income += amount; return; }
+      expense += amount;
+      const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
+      const purpose = String(item.purpose || '未設定').trim() || '未設定';
+      const store = String(item.store || '名称なし').trim() || '名称なし';
+      categories[category] = (categories[category] || 0) + amount;
+      purposes[purpose] = (purposes[purpose] || 0) + amount;
+      stores[store] = (stores[store] || 0) + amount;
+    });
+    return {records,income,expense,balance:income-expense,categories,purposes,stores};
+  }
+
+  function pctChange(current, previous){
+    const c = Number(current || 0), p = Number(previous || 0);
+    if(!p) return c ? null : 0;
+    return Math.round((c - p) / p * 1000) / 10;
+  }
+
+  function buildMoneyConsultantPayload(days){
+    const stats = visualStats(days);
+    const previous = previousPeriodStats(days);
+    const topCats = topEntries(stats.categories,10);
+    const topPurposes = topEntries(stats.purposes,10);
+    const topStores = topEntries(stats.stores,10);
+    const expenseRecords = stats.records.filter(x => !(x.type === '収入' || x.sourceSheet === '収入用'));
+    const fixedExpense = expenseRecords.filter(x => x.sourceSheet === '固定支払' || x.type === '固定支払').reduce((sum,x) => sum + Number(x.amount || 0), 0);
+    const latest = expenseRecords.slice(0,40).map(x => ({date:x.date,store:x.store,amount:x.amount,category:x.category,purpose:x.purpose || '未設定',items:x.items}));
+    return {
+      days,
+      income:stats.income,
+      expense:stats.expense,
+      balance:stats.balance,
+      dailyAverage:days?Math.round(stats.expense/days):0,
+      expenseCount:expenseRecords.length,
+      fixedExpense,
+      fixedExpenseRatio:stats.expense ? Math.round(fixedExpense / stats.expense * 1000) / 10 : 0,
+      previousPeriod:{
+        income:previous.income,
+        expense:previous.expense,
+        balance:previous.balance,
+        incomeChangePct:pctChange(stats.income, previous.income),
+        expenseChangePct:pctChange(stats.expense, previous.expense)
+      },
+      topCategories:topCats,
+      topPurposes,
+      topStores,
+      latestExpenses:latest
+    };
+  }
+
+  function renderMoneyConsultant(result, days){
+    const box = $('moneyConsultantResult');
+    const redirectYen = Math.max(0, Number(result?.estimatedRedirectYen || 0));
+    box.classList.remove('hidden');
+    const bullets = (arr, icon='•') => Array.isArray(arr) && arr.length ? `<ul class="space-y-1.5">${arr.map(x => `<li class="flex gap-2"><span class="text-emerald-300">${icon}</span><span>${escapeHtml(x)}</span></li>`).join('')}</ul>` : '<p class="text-indigo-200">該当なし</p>';
+    box.innerHTML = `
+      <div class="flex justify-between gap-3 items-start mb-3"><div><p class="text-[9px] text-indigo-200">${days}日間の診断</p><p class="text-sm font-black mt-1">${escapeHtml(result.headline || '支出傾向を分析しました')}</p></div><span class="text-[9px] px-2 py-1 rounded-full bg-emerald-400/20 text-emerald-200 whitespace-nowrap">Gemini 3.6 Flash</span></div>
+      <div class="space-y-4">
+        <div><p class="font-black text-emerald-200 mb-1.5">良い使い方</p>${bullets(result.goodPoints,'✓')}</div>
+        <div><p class="font-black text-amber-200 mb-1.5">注意したい支出</p>${bullets(result.watchPoints,'!')}</div>
+        <div><p class="font-black text-rose-200 mb-1.5">減らす・やめる候補</p>${bullets(result.stopOrReduce,'−')}</div>
+        <div><p class="font-black text-sky-200 mb-1.5">別用途へ回す案</p>${bullets(result.redirectIdeas,'→')}</div>
+        <div><p class="font-black text-white mb-1.5">次にやること</p>${bullets(result.nextActions,'1')}</div>
+      </div>
+      ${redirectYen ? `<div class="mt-4 rounded-xl bg-white/10 p-3"><p class="text-[9px] text-indigo-200">見直し候補額の目安</p><p class="text-lg font-black text-emerald-300 mt-1">${money(redirectYen)}</p><p class="text-[9px] text-indigo-200 mt-1">AIの目安です。生活必需・医療・家族事情を優先してください。</p></div>` : ''}`;
+  }
+
+  $('runMoneyConsultantButton').onclick = () => withButton($('runMoneyConsultantButton'), '分析中...', async () => {
+    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
+    if(!allHistory.length) await loadHistory();
+    const days = Number($('aiMoneyPeriod').value || 30);
+    const summary = buildMoneyConsultantPayload(days);
+    if(!summary.expense && !summary.income) return toast('選択期間に分析できる収支データがありません。', true);
+    const instruction = `あなたは家計改善を支援する実務的なマネーコンサルタントです。以下は${days}日間の実データ集計です。
+金額だけで乱暴に節約を勧めず、医療・生活必需・家族のための支出は必要性を尊重してください。
+投資商品や借入商品を推奨せず、家計・支出配分の改善に限定してください。
+「何に使いすぎているか」「維持してよい支出」「減らす/やめる候補」「減らした金額を何に回すか」「明日からできる具体策」を、データ根拠を示して日本語で具体的に分析してください。
+直前の同じ日数の期間との比較も使い、同じ店舗・カテゴリ・用途の繰り返し、小額頻回支出、固定費比率、収入とのバランスにも注目してください。前期間データが0円で増減率を計算できない場合は、無理に割合を作らず金額差で説明してください。
+JSONのみを返してください。`;
+    const payload = {
+      contents:[{parts:[{text:instruction + '\\n\\n分析データ:\\n' + JSON.stringify(summary)}]}],
+      generationConfig:{
+        responseMimeType:'application/json',
+        responseSchema:{
+          type:'OBJECT',
+          properties:{
+            headline:{type:'STRING'},
+            goodPoints:{type:'ARRAY',items:{type:'STRING'}},
+            watchPoints:{type:'ARRAY',items:{type:'STRING'}},
+            stopOrReduce:{type:'ARRAY',items:{type:'STRING'}},
+            redirectIdeas:{type:'ARRAY',items:{type:'STRING'}},
+            nextActions:{type:'ARRAY',items:{type:'STRING'}},
+            estimatedRedirectYen:{type:'NUMBER'}
+          },
+          required:['headline','goodPoints','watchPoints','stopOrReduce','redirectIdeas','nextActions','estimatedRedirectYen']
+        }
+      }
+    };
+    try {
+      const r = await api({action:'call_gemini', payload});
+      const text = r.result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text) throw new Error('AI診断結果が空です。');
+      renderMoneyConsultant(JSON.parse(text), days);
+    } catch(e) { toast('AI診断エラー: ' + e.message, true); }
+  });
+
   function buildMonthlySummariesClient(records){
     const groups = {};
     records.forEach(item => {
@@ -747,6 +1157,9 @@
         const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
         s.categories[category] = (s.categories[category] || 0) + amount;
         s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
+        const purpose = String(item.purpose || '未設定').trim() || '未設定';
+        s.purposes[purpose] = (s.purposes[purpose] || 0) + amount;
+        s.purposeCounts[purpose] = (s.purposeCounts[purpose] || 0) + 1;
       }
       s.balance = s.income - s.expense;
     });
@@ -784,7 +1197,7 @@
     const expenses = allHistory.filter(item => String(item.date || '').slice(0,7) === selectedMonth && !(item.type === '収入' || item.sourceSheet === '収入用'));
     $('monthlyExpenseCount').textContent = `${expenses.length}件`;
     const shown = expenses.slice(0, monthlyDisplayCount);
-    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
+    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p>${item.purpose ? `<p class="text-[8px] text-indigo-500 mt-0.5">用途：${escapeHtml(item.purpose)}</p>` : ''}</div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
     $('monthlyMoreButton').classList.toggle('hidden', expenses.length <= monthlyDisplayCount);
     lucide.createIcons();
   }
@@ -818,7 +1231,7 @@
       if(from && item.date < from) return false;
       if(to && item.date > to) return false;
       if(keyword){
-        const haystack = [item.store,item.items,item.category,item.patientName,item.type].join(' ').toLowerCase();
+        const haystack = [item.store,item.items,item.category,item.purpose,item.patientName,item.type].join(' ').toLowerCase();
         if(!haystack.includes(keyword)) return false;
       }
       return true;
@@ -832,7 +1245,7 @@
     $('historyList').innerHTML = shown.map(item => {
       const income = item.type === '収入' || item.sourceSheet === '収入用';
       const encoded = encodeURIComponent(item.recordId || '');
-      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p></div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
+      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p>${item.purpose ? `<p class="text-[9px] text-indigo-500 mt-1">用途：${escapeHtml(item.purpose)}</p>` : ''}</div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
     }).join('') || '<div class="text-center text-xs text-slate-400 py-12">条件に該当する履歴がありません</div>';
     $('moreButton').classList.toggle('hidden', list.length <= displayCount);
     lucide.createIcons();
@@ -880,6 +1293,7 @@
     $('editPatient').value = item.patientName || '';
     $('editAmount').value = item.amount;
     $('editCategory').value = item.category;
+    $('editPurpose').value = item.purpose || '';
     $('editItems').value = item.items === '-' ? '' : item.items;
     $('editModal').classList.remove('hidden');
     $('editModal').classList.add('flex');
@@ -893,10 +1307,12 @@
       patientName:$('editPatient').value.trim(),
       amount:Number($('editAmount').value),
       category:$('editCategory').value.trim(),
+      purpose:$('editPurpose').value.trim(),
       items:$('editItems').value.trim() || '-'
     };
     try {
       await api({ action:'update_row', sourceSheet:$('editSheet').value, recordId:$('editRecordId').value, data });
+      await ensurePurposeRegistered(data.purpose);
       closeEdit();
       toast('修正しました。');
       loadHistory();
@@ -924,12 +1340,27 @@
       updateMode();
       toast(`接続成功（${r.version || 'GAS'}）。URLを保存しました。`);
       loadDeleted();
+      loadPurposes();
     } catch(e) {
       if(previousUrl) localStorage.setItem('yuzuGasUrl', previousUrl);
       else localStorage.removeItem('yuzuGasUrl');
       updateMode();
       toast('接続確認に失敗しました。以前の設定は変更していません。' + e.message, true);
     }
+  });
+
+
+  $('addPurposeMasterButton').onclick = () => withButton($('addPurposeMasterButton'), '追加中...', async () => {
+    const purpose = $('newPurposeMaster').value.trim();
+    if(!purpose) return toast('追加する用途を入力してください。', true);
+    try {
+      const r = await api({action:'add_purpose', purpose});
+      purposeOptions = r.purposes || purposeOptions;
+      customPurposeOptions = r.customPurposes || customPurposeOptions;
+      $('newPurposeMaster').value = '';
+      renderPurposeOptions();
+      toast('用途候補を追加しました。');
+    } catch(e) { toast(e.message, true); }
   });
 
   $('backupButton').onclick = () => withButton($('backupButton'), 'バックアップ中...', async () => {
@@ -1032,7 +1463,7 @@
         headers.forEach((h,j) => o[h] = r[j]);
         out.push(mapImportObject(o, sheetName));
       } else {
-        out.push({ timestamp:r[0], date:r[1], type:guessType(r[2], sheetName), patientName:/医療/.test(sheetName) ? r[2] : '', store:r[3], amount:r[4], category:r[5], items:r[6], recordId:r[7], sourceSheet:sheetName });
+        out.push({ timestamp:r[0], date:r[1], type:guessType(r[2], sheetName), patientName:/医療/.test(sheetName) ? r[2] : '', store:r[3], amount:r[4], category:r[5], items:r[6], recordId:r[7], purpose:r[8], sourceSheet:sheetName });
       }
     }
     return out;
@@ -1055,6 +1486,7 @@
       amount:pick(['金額','合計','支払金額','収入金額','amount']),
       category:pick(['カテゴリ','分類','category']),
       items:pick(['内容','品目','詳細','摘要','items']),
+      purpose:pick(['用途・使途','用途','使途','目的','purpose']),
       recordId:pick(['管理ID','ID','recordId']),
       sourceSheet:sheet
     };
