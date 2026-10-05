@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.9.1</title>
+  <title>領収書・収支管理 - YUZU Production v3.9.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -36,7 +36,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9.1</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9.2</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -116,7 +116,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳 <span class="font-normal text-[9px] text-slate-400">店舗名を優先して集計</span></h3><div id="categoryList" class="space-y-3"></div></div>
 
 
-      <!-- v3.9.1 ビジュアル分析 -->
+      <!-- v3.9.2 ビジュアル分析 -->
       <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
@@ -153,7 +153,7 @@
         </div>
       </div>
 
-      <!-- v3.9.1 AIマネーコンサル -->
+      <!-- v3.9.2 AIマネーコンサル -->
       <div class="bg-gradient-to-br from-indigo-950 to-indigo-700 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/40 mb-4">
         <div class="flex items-start gap-3">
           <span class="p-2.5 rounded-2xl bg-white/10"><i data-lucide="brain-circuit" class="w-5 h-5 text-emerald-300"></i></span>
@@ -254,7 +254,7 @@
 
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
         <label class="label">支払項目<select id="fixedItem" class="field mt-1"></select></label>
-        <label id="newFixedWrap" class="label hidden">新しい項目名<input id="newFixedItem" class="field mt-1" placeholder="例：サブスク代"></label>
+        <div id="newFixedWrap" class="hidden"><label class="label">新しい項目名<input id="newFixedItem" class="field mt-1" maxlength="60" placeholder="例：サブスク代"></label><button id="registerNewFixedItemButton" type="button" class="w-full mt-2 h-10 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-bold">この項目を追加して選択</button></div>
         <label class="label">金額<input id="fixedAmount" type="number" min="1" class="field mt-1"></label>
         <label class="label">支払日<input id="fixedDate" type="date" class="field mt-1"></label>
         <label class="label">用途・使途<input id="fixedPurpose" list="purposeOptionsList" class="field mt-1" placeholder="例：生活費"></label>
@@ -555,7 +555,8 @@
     const savedUrl = overrideUrl || localStorage.getItem('yuzuGasUrl') || '';
     const endpoint = normalizeGasUrl(savedUrl);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30000);
+    const timeoutMs = payload && payload.action === 'call_gemini' ? 90000 : 45000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response;
     try {
       response = await fetch(endpoint, {
@@ -567,7 +568,7 @@
         signal:controller.signal
       });
     } catch(e) {
-      const detail = e && e.name === 'AbortError' ? '接続が30秒でタイムアウトしました。' : `GASへ接続できませんでした（${e && e.message ? e.message : '通信失敗'}）。`;
+      const detail = e && e.name === 'AbortError' ? `接続が${Math.round(timeoutMs/1000)}秒でタイムアウトしました。` : `GASへ接続できませんでした（${e && e.message ? e.message : '通信失敗'}）。`;
       throw new Error(detail + ' デプロイを「次のユーザーとして実行：自分」「アクセスできるユーザー：全員」にし、/exec URLを確認してください。');
     } finally {
       clearTimeout(timer);
@@ -686,21 +687,78 @@
   $('clearImageButton').onclick = resetInput;
   ['cameraInput','galleryInput'].forEach(id => $(id).addEventListener('change', readImage));
 
-  function readImage(e){
+  function dataUrlToParts(dataUrl){
+    const match = String(dataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
+    if(!match) throw new Error('画像データを準備できませんでした。');
+    return { mimeType:match[1], data:match[2], dataUrl };
+  }
+
+  function readFileAsDataUrl(file){
+    return new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('画像ファイルを読み込めませんでした。'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImageElement(dataUrl){
+    return new Promise((resolve,reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('この画像形式をブラウザで開けません。JPEG・PNG画像をお試しください。'));
+      img.src = dataUrl;
+    });
+  }
+
+  async function prepareImageForOcr(file){
+    if(!file || !String(file.type || '').startsWith('image/')) throw new Error('画像ファイルを選択してください。');
+    if(file.size > 20 * 1024 * 1024) throw new Error('画像が大きすぎます。20MB以下の画像を選択してください。');
+    const original = await readFileAsDataUrl(file);
+    const img = await loadImageElement(original);
+    const maxSide = 1800;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d', {alpha:false});
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,width,height);
+    ctx.drawImage(img,0,0,width,height);
+    // 領収書OCRは高解像度を保ちつつJPEGへ圧縮してGASへの送信を軽くする。
+    const compressed = canvas.toDataURL('image/jpeg', 0.88);
+    return dataUrlToParts(compressed);
+  }
+
+  function parseGeminiJson(result){
+    const parts = result && result.result && result.result.candidates && result.result.candidates[0] && result.result.candidates[0].content && result.result.candidates[0].content.parts;
+    const text = Array.isArray(parts) ? parts.map(p => p && p.text ? p.text : '').join('').trim() : '';
+    if(!text) throw new Error('AIの読取結果が空です。画像全体が明るく写るように撮り直してください。');
+    const cleaned = text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+    try { return JSON.parse(cleaned); }
+    catch(e){
+      const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
+      if(start >= 0 && end > start){
+        try { return JSON.parse(cleaned.slice(start,end+1)); } catch(_) {}
+      }
+      throw new Error('AI結果をJSONとして解析できませんでした。もう一度読み取ってください。');
+    }
+  }
+
+  async function readImage(e){
     const file = e.target.files[0];
     if(!file) return;
-    if(!file.type.startsWith('image/')) return toast('画像ファイルを選択してください。', true);
-    if(file.size > 12 * 1024 * 1024) return toast('画像が大きすぎます。12MB以下にしてください。', true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      imageData = reader.result.split(',')[1];
-      imageMime = file.type;
-      $('imagePreview').src = reader.result;
+    try{
+      const prepared = await prepareImageForOcr(file);
+      imageData = prepared.data;
+      imageMime = prepared.mimeType;
+      $('imagePreview').src = prepared.dataUrl;
       $('scanStart').classList.add('hidden');
       $('imageArea').classList.remove('hidden');
-      $('ocrDate').value = todayString();
-    };
-    reader.readAsDataURL(file);
+      // 日付はAIが画像から読む。ユーザーが必要な時だけ手動で指定する。
+      $('ocrDate').value = '';
+      toast('画像をOCR用に最適化しました。AI読取を押してください。');
+    }catch(err){ toast(err.message, true); }
   }
 
   function fillCategories(select, type, selected=''){
@@ -766,7 +824,7 @@
   $('ocrButton').onclick = () => withButton($('ocrButton'), 'AIが読み取り中...', async () => {
     if(!imageData) return toast('画像を選択してください。', true);
     try {
-      const instruction = `領収書または書類画像から正確に情報を抽出し、指定されたJSONだけを返してください。店舗名・日付・合計金額を最優先で確認してください。${$('ocrType').value ? `種類は「${$('ocrType').value}」を優先してください。` : ''}${$('ocrDate').value ? `日付は「${$('ocrDate').value}」を優先してください。` : ''}`;
+      const instruction = `日本の領収書・レシート・請求書画像をOCRしてください。指定JSONだけを返してください。店舗名、画像に印字された取引日、最終的な合計/支払金額を最優先し、小計・税額・預り金・お釣りを合計額と誤認しないでください。文字が不鮮明な項目は推測しすぎず空文字にしてください。${$('ocrType').value ? `種類は「${$('ocrType').value}」を優先してください。` : ''}${$('ocrDate').value ? `ユーザー指定日「${$('ocrDate').value}」を日付として使用してください。` : ''}`;
       const payload = {
         contents:[{parts:[{text:instruction},{inlineData:{mimeType:imageMime,data:imageData}}]}],
         generationConfig:{
@@ -782,9 +840,7 @@
         }
       };
       const result = await api({ action:'call_gemini', payload });
-      const text = result.result?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if(!text) throw new Error('AIの読取結果が空です。画像を撮り直してください。');
-      const data = JSON.parse(text);
+      const data = parseGeminiJson(result);
       if($('ocrType').value) data.type = $('ocrType').value;
       if($('ocrDate').value) data.date = $('ocrDate').value;
       if($('ocrPatient').value.trim()) data.patientName = $('ocrPatient').value.trim();
@@ -868,12 +924,17 @@
   async function loadFixedItems(){
     if(!connected()){ renderFixedItems(); return; }
     try{
+      const ping = await api({action:'ping'});
       const r = await api({action:'get_fixed_items'});
       fixedItemOptions = Array.isArray(r.items) && r.items.length ? r.items : fixedItemOptions;
       customFixedItemOptions = Array.isArray(r.customItems) ? r.customItems : [];
       await migrateLegacyFixedItems();
       renderFixedItems($('fixedItem').value);
-    }catch(e){ renderFixedItems(); }
+      if(ping.version && ping.version !== '3.9.2') toast(`GASはv${ping.version}です。固定費追加を確実に使うにはv3.9.2へ再デプロイしてください。`, true);
+    }catch(e){
+      renderFixedItems();
+      toast('固定支払マスターを取得できません: ' + e.message, true);
+    }
   }
 
   async function ensureFixedItemRegistered(value){
@@ -926,6 +987,19 @@
   };
 
   $('fixedItem').onchange = () => $('newFixedWrap').classList.toggle('hidden', $('fixedItem').value !== '__new__');
+  $('registerNewFixedItemButton').onclick = () => withButton($('registerNewFixedItemButton'), '追加中...', async () => {
+    const item = $('newFixedItem').value.trim();
+    if(!item) return toast('新しい支払項目名を入力してください。', true);
+    try{
+      const r = await api({action:'add_fixed_item', item});
+      fixedItemOptions = r.items || fixedItemOptions.concat([item]);
+      customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
+      renderFixedItems(item);
+      $('newFixedWrap').classList.add('hidden');
+      $('newFixedItem').value = '';
+      toast(`「${item}」を追加しました。次回から候補に残ります。`);
+    }catch(e){ toast('固定支払項目を追加できません: ' + e.message, true); }
+  });
 
   function clearFixedImage(){
     fixedImageData = '';
@@ -943,19 +1017,17 @@
     $('fixedGalleryInput').click();
   };
   $('clearFixedImageButton').onclick = clearFixedImage;
-  ['fixedCameraInput','fixedGalleryInput'].forEach(id => $(id).addEventListener('change', e => {
+  ['fixedCameraInput','fixedGalleryInput'].forEach(id => $(id).addEventListener('change', async e => {
     const file = e.target.files[0];
     if(!file) return;
-    if(!file.type.startsWith('image/')) return toast('画像ファイルを選択してください。', true);
-    if(file.size > 12 * 1024 * 1024) return toast('画像が大きすぎます。12MB以下にしてください。', true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      fixedImageData = reader.result.split(',')[1];
-      fixedImageMime = file.type;
-      $('fixedImagePreview').src = reader.result;
+    try{
+      const prepared = await prepareImageForOcr(file);
+      fixedImageData = prepared.data;
+      fixedImageMime = prepared.mimeType;
+      $('fixedImagePreview').src = prepared.dataUrl;
       $('fixedImageArea').classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+      toast('固定支払の画像をOCR用に最適化しました。');
+    }catch(err){ toast(err.message, true); }
   }));
 
   $('fixedOcrButton').onclick = () => withButton($('fixedOcrButton'), 'AIが読み取り中...', async () => {
@@ -977,9 +1049,7 @@
         }
       };
       const result = await api({action:'call_gemini', payload});
-      const text = result.result?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if(!text) throw new Error('AIの読取結果が空です。画像を撮り直してください。');
-      const data = JSON.parse(text);
+      const data = parseGeminiJson(result);
       const item = String(data.fixedItem || '').trim();
       if(item && fixedItemOptions.includes(item)){
         renderFixedItems(item);
@@ -1001,9 +1071,9 @@
     if(item === '__new__') item = $('newFixedItem').value.trim();
     const data = { type:'固定支払', date:$('fixedDate').value, store:item, amount:Number($('fixedAmount').value), category:'固定費', items:item, patientName:'', purpose:$('fixedPurpose').value.trim() || '生活費' };
     try {
+      if($('fixedItem').value === '__new__' && item) await ensureFixedItemRegistered(item);
       const result = await saveWithDuplicateCheck(data);
       if(!result) return;
-      if($('fixedItem').value === '__new__' && item) await ensureFixedItemRegistered(item);
       await ensurePurposeRegistered(data.purpose);
       $('fixedAmount').value = '';
       $('newFixedItem').value = '';
