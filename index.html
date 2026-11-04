@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.9.2</title>
+  <title>領収書・収支管理 - YUZU Production v3.10.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -36,7 +36,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.9.2</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.10.0</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -280,6 +280,7 @@
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
         <div id="statusBox" class="text-xs font-bold leading-relaxed p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950"></div>
         <label class="label">GASウェブアプリURL<input id="gasUrl" class="field mt-1" placeholder="https://script.google.com/macros/s/.../exec"></label>
+        <label class="label">合言葉<input id="gasToken" type="password" autocomplete="off" class="field mt-1" placeholder="GASで設定した合言葉（スクリプトプロパティ YUZU_ACCESS_TOKEN）"></label>
         <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>接続確認して保存</button>
       </div>
 
@@ -523,6 +524,9 @@
     return {daily:make('day',31), weekly:make('week',12), monthly:make('month',12)};
   }
 
+  const APP_VERSION = '3.10.0';
+  let authWarned = false;
+
   function connected(){ return /^https:\/\/script\.google\.com\//.test(localStorage.getItem('yuzuGasUrl') || ''); }
   function escapeHtml(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
@@ -551,7 +555,7 @@
     return url;
   }
 
-  async function api(payload, overrideUrl=''){
+  async function api(payload, overrideUrl='', overrideToken=null){
     const savedUrl = overrideUrl || localStorage.getItem('yuzuGasUrl') || '';
     const endpoint = normalizeGasUrl(savedUrl);
     const controller = new AbortController();
@@ -562,7 +566,7 @@
       response = await fetch(endpoint, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify(payload),
+        body:JSON.stringify(Object.assign({}, payload, { token: overrideToken !== null ? overrideToken : (localStorage.getItem('yuzuToken') || '') })),
         redirect:'follow',
         cache:'no-store',
         signal:controller.signal
@@ -782,6 +786,7 @@
       if(e.result && e.result.duplicate) {
         e.duplicate = true;
         e.existingDate = e.result.existingDate || '';
+        e.sameDay = Boolean(e.result.sameDay);
       }
       throw e;
     }
@@ -792,7 +797,10 @@
     catch(e) {
       if(!e.duplicate) throw e;
       const dateText = e.existingDate || '同じ月';
-      if(!confirm(`${dateText}に同じ支払先・金額があります。重複して保存しますか？`)) return null;
+      const message = e.sameDay
+        ? `${dateText}に同じ支払先・金額の登録があります。重複して保存しますか？`
+        : `同じ月（${dateText}）に同じ支払先・金額の登録があります。日付が違うので別の買い物なら「OK」で保存できます。保存しますか？`;
+      if(!confirm(message)) return null;
       return await saveRecord(data, true);
     }
   }
@@ -930,7 +938,8 @@
       customFixedItemOptions = Array.isArray(r.customItems) ? r.customItems : [];
       await migrateLegacyFixedItems();
       renderFixedItems($('fixedItem').value);
-      if(ping.version && ping.version !== '3.9.2') toast(`GASはv${ping.version}です。固定費追加を確実に使うにはv3.9.2へ再デプロイしてください。`, true);
+      if(ping.version && ping.version !== APP_VERSION) toast(`画面はv${APP_VERSION}、GASはv${ping.version}です。Code.gsを同じ版に更新して再デプロイしてください。`, true);
+      else if(ping.authConfigured === false && !authWarned) { authWarned = true; toast('GAS側で合言葉が未設定です。設定すると第三者の利用を防げます。', true); }
     }catch(e){
       renderFixedItems();
       toast('固定支払マスターを取得できません: ' + e.message, true);
@@ -1589,19 +1598,26 @@ JSONのみを返してください。`;
 
   $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
     const previousUrl = localStorage.getItem('yuzuGasUrl') || '';
+    const previousToken = localStorage.getItem('yuzuToken') || '';
     try {
       const url = normalizeGasUrl($('gasUrl').value);
-      const r = await api({ action:'ping' }, url);
+      const token = $('gasToken').value.trim();
+      const r = await api({ action:'ping' }, url, token);
+      if(r.authConfigured && !r.authOk) throw new Error('合言葉が違います。GASのスクリプトプロパティ YUZU_ACCESS_TOKEN と同じ値を入力してください。');
       localStorage.setItem('yuzuGasUrl', url);
+      localStorage.setItem('yuzuToken', token);
       $('gasUrl').value = url;
       updateMode();
-      toast(`接続成功（${r.version || 'GAS'}）。URLを保存しました。`);
+      if(r.authConfigured) toast(`接続成功（${r.version || 'GAS'}）。URLと合言葉を保存しました。`);
+      else toast(`接続成功（${r.version || 'GAS'}）。ただしGAS側で合言葉が未設定です。第三者に使われないよう設定してください。`, true);
       loadDeleted();
       loadPurposes();
       loadFixedItems();
     } catch(e) {
       if(previousUrl) localStorage.setItem('yuzuGasUrl', previousUrl);
       else localStorage.removeItem('yuzuGasUrl');
+      if(previousToken) localStorage.setItem('yuzuToken', previousToken);
+      else localStorage.removeItem('yuzuToken');
       updateMode();
       toast('接続確認に失敗しました。以前の設定は変更していません。' + e.message, true);
     }
@@ -1754,6 +1770,7 @@ JSONのみを返してください。`;
   $('fixedDate').value = todayString();
   $('ocrDate').value = todayString();
   $('gasUrl').value = localStorage.getItem('yuzuGasUrl') || '';
+  $('gasToken').value = localStorage.getItem('yuzuToken') || '';
   renderFixedItems();
   loadFixedItems();
   updateManualType();
