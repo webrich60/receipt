@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.10.0</title>
+  <title>領収書・収支管理 - YUZU Production v3.10.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -36,7 +36,7 @@
     <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
     </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.10.0</span></h1>
+    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.10.1</span></h1>
     <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
   </header>
 
@@ -280,7 +280,13 @@
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
         <div id="statusBox" class="text-xs font-bold leading-relaxed p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950"></div>
         <label class="label">GASウェブアプリURL<input id="gasUrl" class="field mt-1" placeholder="https://script.google.com/macros/s/.../exec"></label>
-        <label class="label">合言葉<input id="gasToken" type="password" autocomplete="off" class="field mt-1" placeholder="GASで設定した合言葉（スクリプトプロパティ YUZU_ACCESS_TOKEN）"></label>
+        <div>
+          <label class="label" for="gasToken">合言葉</label>
+          <div class="relative mt-1">
+            <input id="gasToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" class="field pr-20" placeholder="GASで設定した合言葉">
+            <button type="button" id="toggleTokenButton" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-bold" aria-pressed="false">表示</button>
+          </div>
+        </div>
         <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>接続確認して保存</button>
       </div>
 
@@ -524,10 +530,32 @@
     return {daily:make('day',31), weekly:make('week',12), monthly:make('month',12)};
   }
 
-  const APP_VERSION = '3.10.0';
+  // 端末保存。github.io は他のアプリと保存領域を共有するため、満杯でも動くよう
+  // localStorage → 不要キー削除して再試行 → Cookie の順に退避する。
+  const store = {
+    get(key){
+      try { const v = localStorage.getItem(key); if(v !== null) return v; } catch(e) {}
+      const m = document.cookie.split('; ').find(c => c.startsWith('yz_' + key + '='));
+      return m ? decodeURIComponent(m.slice(('yz_' + key + '=').length)) : null;
+    },
+    set(key, value){
+      value = String(value);
+      const cookie = () => { document.cookie = 'yz_' + key + '=' + encodeURIComponent(value) + '; max-age=31536000; path=/; SameSite=Strict; Secure'; };
+      try { localStorage.setItem(key, value); this.dropCookie(key); return; } catch(e) {}
+      try { localStorage.removeItem('yuzuFixedItems'); localStorage.setItem(key, value); this.dropCookie(key); return; } catch(e) {}
+      cookie();
+    },
+    remove(key){
+      try { localStorage.removeItem(key); } catch(e) {}
+      this.dropCookie(key);
+    },
+    dropCookie(key){ document.cookie = 'yz_' + key + '=; max-age=0; path=/'; }
+  };
+
+  const APP_VERSION = '3.10.1';
   let authWarned = false;
 
-  function connected(){ return /^https:\/\/script\.google\.com\//.test(localStorage.getItem('yuzuGasUrl') || ''); }
+  function connected(){ return /^https:\/\/script\.google\.com\//.test(store.get('yuzuGasUrl') || ''); }
   function escapeHtml(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
   function toast(message, error=false){
@@ -556,7 +584,7 @@
   }
 
   async function api(payload, overrideUrl='', overrideToken=null){
-    const savedUrl = overrideUrl || localStorage.getItem('yuzuGasUrl') || '';
+    const savedUrl = overrideUrl || store.get('yuzuGasUrl') || '';
     const endpoint = normalizeGasUrl(savedUrl);
     const controller = new AbortController();
     const timeoutMs = payload && payload.action === 'call_gemini' ? 90000 : 45000;
@@ -566,7 +594,7 @@
       response = await fetch(endpoint, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify(Object.assign({}, payload, { token: overrideToken !== null ? overrideToken : (localStorage.getItem('yuzuToken') || '') })),
+        body:JSON.stringify(Object.assign({}, payload, { token: overrideToken !== null ? overrideToken : (store.get('yuzuToken') || '') })),
         redirect:'follow',
         cache:'no-store',
         signal:controller.signal
@@ -913,9 +941,9 @@
   }
 
   async function migrateLegacyFixedItems(){
-    if(!connected() || localStorage.getItem('yuzuFixedItemsMigrated391') === '1') return;
+    if(!connected() || store.get('yuzuFixedItemsMigrated391') === '1') return;
     try{
-      const legacy = JSON.parse(localStorage.getItem('yuzuFixedItems') || '[]');
+      const legacy = JSON.parse(store.get('yuzuFixedItems') || '[]');
       if(Array.isArray(legacy)){
         for(const raw of legacy){
           const item = String(raw || '').trim();
@@ -925,7 +953,7 @@
           customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
         }
       }
-      localStorage.setItem('yuzuFixedItemsMigrated391', '1');
+      store.set('yuzuFixedItemsMigrated391', '1');
     }catch(e){}
   }
 
@@ -1597,15 +1625,15 @@ JSONのみを返してください。`;
   };
 
   $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
-    const previousUrl = localStorage.getItem('yuzuGasUrl') || '';
-    const previousToken = localStorage.getItem('yuzuToken') || '';
+    const previousUrl = store.get('yuzuGasUrl') || '';
+    const previousToken = store.get('yuzuToken') || '';
     try {
       const url = normalizeGasUrl($('gasUrl').value);
       const token = $('gasToken').value.trim();
       const r = await api({ action:'ping' }, url, token);
       if(r.authConfigured && !r.authOk) throw new Error('合言葉が違います。GASのスクリプトプロパティ YUZU_ACCESS_TOKEN と同じ値を入力してください。');
-      localStorage.setItem('yuzuGasUrl', url);
-      localStorage.setItem('yuzuToken', token);
+      store.set('yuzuGasUrl', url);
+      store.set('yuzuToken', token);
       $('gasUrl').value = url;
       updateMode();
       if(r.authConfigured) toast(`接続成功（${r.version || 'GAS'}）。URLと合言葉を保存しました。`);
@@ -1614,10 +1642,10 @@ JSONのみを返してください。`;
       loadPurposes();
       loadFixedItems();
     } catch(e) {
-      if(previousUrl) localStorage.setItem('yuzuGasUrl', previousUrl);
-      else localStorage.removeItem('yuzuGasUrl');
-      if(previousToken) localStorage.setItem('yuzuToken', previousToken);
-      else localStorage.removeItem('yuzuToken');
+      if(previousUrl) store.set('yuzuGasUrl', previousUrl);
+      else store.remove('yuzuGasUrl');
+      if(previousToken) store.set('yuzuToken', previousToken);
+      else store.remove('yuzuToken');
       updateMode();
       toast('接続確認に失敗しました。以前の設定は変更していません。' + e.message, true);
     }
@@ -1769,8 +1797,14 @@ JSONのみを返してください。`;
   $('manualDate').value = todayString();
   $('fixedDate').value = todayString();
   $('ocrDate').value = todayString();
-  $('gasUrl').value = localStorage.getItem('yuzuGasUrl') || '';
-  $('gasToken').value = localStorage.getItem('yuzuToken') || '';
+  $('gasUrl').value = store.get('yuzuGasUrl') || '';
+  $('gasToken').value = store.get('yuzuToken') || '';
+  $('toggleTokenButton').onclick = () => {
+    const show = $('gasToken').type === 'password';
+    $('gasToken').type = show ? 'text' : 'password';
+    $('toggleTokenButton').textContent = show ? '隠す' : '表示';
+    $('toggleTokenButton').setAttribute('aria-pressed', String(show));
+  };
   renderFixedItems();
   loadFixedItems();
   updateManualType();
