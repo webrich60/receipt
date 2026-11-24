@@ -1,1816 +1,264 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>領収書・収支管理 - YUZU Production v3.10.1</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Noto Sans JP', sans-serif; background:#eef2f7; overscroll-behavior-y:none; }
-    .app { max-width:430px; margin:0 auto; height:100vh; height:100dvh; background:#fff; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,.08); }
-    main { flex:1; overflow:auto; padding-bottom:90px; background:#f8fafc; }
-    .hidden-scroll::-webkit-scrollbar { display:none; }
-    .hidden-scroll { scrollbar-width:none; }
-    .tab-button.active { color:#4f46e5; font-weight:700; }
-    .period-button.active { background:#312e81; color:#fff; border-color:#312e81; }
-    .spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; }
-    .spinner-dark { border-color:rgba(79,70,229,.2); border-top-color:#4f46e5; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    #toast { transition:.25s ease; z-index:100; }
-    .toast-hide { transform:translateY(-140%); opacity:0; }
-    .toast-show { transform:translateY(0); opacity:1; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6660">
+<title>ビタミン・サプリ管理</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Yu Gothic",Meiryo,sans-serif;color:#172a35;background:#edf3f5;font-size:16px;line-height:1.5}
+*{box-sizing:border-box}body{margin:0;padding-bottom:94px}button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}button:focus-visible,input:focus-visible{outline:3px solid #f2bf45;outline-offset:2px}
+.header{background:linear-gradient(110deg,#127d74,#09554e);color:white;padding:14px 17px;box-shadow:0 2px 10px #142b3240}
+.header-inner{max-width:780px;margin:auto;display:flex;align-items:center;gap:11px}.brand{font-size:1.15rem;line-height:1.35;flex:1;font-weight:850;letter-spacing:.01em}.brand-icon{font-size:1.45rem}.v{font-size:.74rem;color:#d6fff8;font-weight:700}
+.today{background:#054c47;color:white;border:2px solid #4fd6c6;border-radius:12px;padding:9px 12px;font-weight:800;white-space:nowrap}
+main{max-width:780px;margin:18px auto;padding:0 13px}.card{background:white;border:2px solid #9fb0bd;border-radius:17px;padding:17px;box-shadow:0 2px 5px #253f4912;margin-bottom:14px}.card.teal{border-color:#3cbbad}.card h2,.card h3{margin:0 0 12px;font-weight:850;color:#103f42}h2{font-size:1.2rem}h3{font-size:1.05rem}
+p{margin:8px 0}.small{font-size:.83rem}.muted{color:#4a6070}.bold{font-weight:800}.label{display:block;font-weight:800;margin:7px 0}.input{width:100%;padding:12px;border:2px solid #718999;border-radius:10px;color:#172a35;background:white;min-width:0}.input:focus{border-color:#0f8377}.input.num{width:75px;text-align:center;padding:8px}.line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.between{justify-content:space-between}.row{display:flex;align-items:center;gap:9px}.grow{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:2px solid #0d574f;background:#10665f;color:#fff;border-radius:11px;padding:10px 14px;font-weight:820;min-height:44px;text-align:center}.btn.ghost{background:white;color:#125e56}.btn.dark{background:#1e2c40;border-color:#172238}.btn.red{background:#fff;color:#a22b2b;border-color:#be4242}.btn.full{width:100%}.btn.tiny{min-height:38px;padding:6px 12px;font-size:.88rem}
+.notice{border-radius:10px;padding:11px 13px;border:2px solid #8a9ead;background:#f3f7f9;font-size:.91rem;margin-bottom:13px}.notice.good{border-color:#118673;background:#e6f8f3;color:#10433e}.notice.warn{border-color:#c17d29;background:#fff8e7;color:#684a19}.notice.error{border-color:#b72c32;background:#fff1f0;color:#6d1116}.status{font-weight:800;line-height:1.35}.date-selector{display:flex;align-items:center;justify-content:center;gap:10px}.date-selector .date{font-weight:850;max-width:180px}.arrow{font-size:1.28rem;border:2px solid #688e91;border-radius:10px;background:#fff;width:43px;height:44px;color:#0c5c5b}
+.dose-card{border:2px solid #b0bfc8;border-radius:15px;padding:14px;margin:13px 0}.dose-title{font-weight:900;font-size:1.1rem;color:#174e51}.pill-item{padding:12px 0;border-top:1px solid #c8d3d9}.pill-item:first-of-type{border-top:none}.pill-name{font-weight:850;overflow-wrap:anywhere}.pill-info{font-size:.83rem;color:#4e6472}.amount{text-align:center;font-size:1rem;font-weight:850;color:#204752;min-width:38px}.dose-action{width:100%;margin-top:7px}.recorded{background:#e9faf4;border-color:#159777;color:#07574e}.total{border:2px solid #319e90;border-radius:13px;padding:11px 14px;background:#ecfdf8;font-weight:850;color:#104e48}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #9dadba;display:flex;justify-content:center;gap:2px;padding:7px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom));box-shadow:0 -3px 10px #31485b19;z-index:20}.tab{flex:1;max-width:190px;border:0;background:transparent;color:#53667a;border-radius:12px;padding:5px 4px;font-weight:850;font-size:.81rem;min-height:56px}.tab b{display:block;font-size:1.35rem;line-height:1.3}.tab.active{background:#ddf7f0;color:#065c55}
+.empty{padding:18px;background:#f4f7f9;border:1px dashed #9aabb7;border-radius:11px;text-align:center;color:#526572}.formgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.formgrid label{font-size:.87rem;font-weight:800}.formgrid input{width:100%;max-width:100%}.supp-row{border-top:1px solid #b5c7cf;padding:14px 0}.supp-row:first-child{border-top:none}.history-group{padding:12px 0;border-top:1px solid #d0dadd}.history-date{font-weight:900;color:#0a5e57}.history-line{display:flex;justify-content:space-between;padding:5px 0;gap:10px}.kicker{font-size:.74rem;font-weight:800;color:#47636e;letter-spacing:.03em}.divider{border:0;border-top:1px solid #c8d5de;margin:15px 0}.photo-preview{display:block;max-width:100%;max-height:250px;object-fit:contain;border:2px solid #93b5b0;border-radius:13px;margin:12px auto}.ai-result{border:2px solid #288d80;background:#effbf6;border-radius:12px;padding:13px;margin-top:12px;overflow-wrap:anywhere}.details{border:1px solid #aec1cb;border-radius:11px;padding:11px;margin-top:10px}.details summary{font-weight:850;cursor:pointer;color:#125e56}.details textarea{resize:vertical}.hidden{display:none!important}.spinner{display:inline-block;width:16px;height:16px;border:3px solid #a5e9de;border-top-color:#0d786e;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:5px}@keyframes spin{to{transform:rotate(360deg)}}
+@media(min-width:600px){.brand{font-size:1.5rem}.brand-icon{font-size:1.8rem}.card{padding:23px}.dose-action{width:auto;margin-top:0}.pill-item{display:flex;align-items:center;justify-content:space-between;gap:15px}.tabs{padding-top:9px}}
+</style>
 </head>
 <body>
-<div class="app relative">
-  <div id="toast" class="toast-hide absolute top-4 left-4 right-4 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-2xl flex gap-3 items-center pointer-events-none">
-    <i id="toastIcon" data-lucide="check-circle" class="w-5 h-5 text-emerald-300"></i>
-    <span id="toastText" class="text-xs font-bold leading-relaxed"></span>
-  </div>
-
-  <header class="h-14 shrink-0 bg-indigo-600 text-white px-4 flex items-center justify-between shadow-md z-10">
-    <button id="modeButton" onclick="switchTab('settings')" class="text-[10px] font-bold rounded-full px-2.5 py-1 bg-indigo-700/70 border border-indigo-400/40 flex gap-1 items-center">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span><span id="modeText">接続確認中</span>
-    </button>
-    <h1 class="absolute left-1/2 -translate-x-1/2 font-bold text-sm flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-300"></i>領収書・収支管理 <span class="text-[9px] font-black bg-white/20 px-1.5 py-0.5 rounded-full">v3.10.1</span></h1>
-    <button onclick="switchTab('settings')" class="p-2"><i data-lucide="settings" class="w-5 h-5"></i></button>
-  </header>
-
-  <main class="hidden-scroll">
-    <!-- 入力 -->
-    <section id="tab-scan" class="p-4 min-h-full">
-      <div id="scanStart" class="space-y-4 py-6">
-        <button id="cameraButton" class="w-full bg-white border-2 border-indigo-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-3 active:scale-[.98] transition">
-          <span class="p-4 rounded-full bg-indigo-50"><i data-lucide="camera" class="w-10 h-10 text-indigo-600"></i></span>
-          <span class="font-bold text-indigo-950">カメラで領収書を読み取る</span>
-          <span class="text-[11px] text-slate-400">APIキーはGAS側で安全に管理します</span>
-        </button>
-        <button id="galleryButton" class="w-full bg-white border border-slate-200 rounded-2xl p-4 font-bold text-sm text-slate-600 flex justify-center gap-2"><i data-lucide="image" class="w-5 h-5 text-indigo-500"></i>画像を選択</button>
-        <div class="flex items-center gap-3"><span class="h-px bg-slate-200 flex-1"></span><span class="text-[10px] text-slate-400">または</span><span class="h-px bg-slate-200 flex-1"></span></div>
-        <button id="manualButton" class="w-full bg-slate-100 border border-slate-200 rounded-2xl p-4 font-bold text-sm text-slate-600 flex justify-center gap-2"><i data-lucide="square-pen" class="w-5 h-5"></i>手動で収支を入力</button>
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
-        <input id="galleryInput" type="file" accept="image/*" class="hidden">
-      </div>
-
-      <div id="imageArea" class="hidden py-3 space-y-4">
-        <div class="relative bg-slate-900 rounded-3xl overflow-hidden shadow-md"><img id="imagePreview" class="w-full h-60 object-contain"><button id="clearImageButton" class="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-        <div class="bg-white border border-slate-100 rounded-2xl p-4 space-y-3 shadow-sm">
-          <select id="ocrType" class="field"><option value="">種類はAI判定</option><option value="領収書">一般領収書</option><option value="医療費">医療費</option><option value="書類">その他書類</option></select>
-          <input id="ocrDate" type="date" class="field">
-          <input id="ocrPatient" type="text" class="field" placeholder="患者名（医療費のみ・任意）">
-        </div>
-        <button id="ocrButton" class="primary-button"><i data-lucide="sparkles" class="w-5 h-5 text-emerald-300"></i><span>AIで読み取る（確認して保存）</span></button>
-      </div>
-
-      <div id="manualArea" class="hidden py-3">
-        <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-sm flex gap-2 items-center"><span class="p-2 rounded-lg bg-indigo-100 text-indigo-600"><i data-lucide="square-pen" class="w-5 h-5"></i></span>手動入力</h2><button id="cancelManualButton" class="text-xs font-bold px-3 py-1.5 bg-slate-200 rounded-full">戻る</button></div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-          <label class="label">種類<select id="manualType" class="field mt-1"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入・入金</option><option value="書類">その他支出</option></select></label>
-          <label class="label">日付<input id="manualDate" type="date" class="field mt-1"></label>
-          <label class="label"><span id="storeLabel">店舗・支払先</span><input id="manualStore" class="field mt-1" placeholder="例：スーパー、病院、取引先"></label>
-          <label id="patientWrap" class="label hidden">患者名<input id="manualPatient" class="field mt-1"></label>
-          <label class="label">金額<input id="manualAmount" type="number" min="1" class="field mt-1" placeholder="0"></label>
-          <label class="label">カテゴリ<select id="manualCategory" class="field mt-1"></select></label>
-          <label class="label">用途・使途
-            <input id="manualPurpose" list="purposeOptionsList" class="field mt-1" placeholder="選択または自由入力（例：旅行・観光）">
-            <span class="block text-[9px] font-normal text-slate-400 mt-1">新しい用途を入力して保存すると、次回から候補に追加されます。</span>
-          </label>
-          <label class="label">内容・摘要<input id="manualItems" class="field mt-1" placeholder="任意"></label>
-        </div>
-        <button id="saveManualButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>保存する</span></button>
-      </div>
-
-      <div id="savedArea" class="hidden py-12 text-center">
-        <div class="bg-white rounded-3xl border border-slate-100 p-7 shadow-sm"><span class="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check" class="w-8 h-8"></i></span><h2 class="font-bold text-lg mt-4">保存しました</h2><p id="savedPlace" class="text-xs text-slate-400 mt-1"></p><button id="continueButton" class="mt-6 w-full py-3.5 bg-indigo-50 text-indigo-700 font-bold rounded-xl">続けて入力</button></div>
-      </div>
-    </section>
-
-    <!-- 履歴 -->
-    <section id="tab-history" class="hidden p-4 min-h-full">
-      <div class="grid grid-cols-3 gap-2 mb-3">
-        <button class="period-button active border rounded-xl py-2 text-xs font-bold bg-white" data-period="day">今日</button>
-        <button class="period-button border rounded-xl py-2 text-xs font-bold bg-white" data-period="week">今週</button>
-        <button class="period-button border rounded-xl py-2 text-xs font-bold bg-white" data-period="month">今月</button>
-      </div>
-
-      <div class="bg-indigo-600 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/50 mb-4">
-        <p id="summaryTitle" class="text-[11px] text-indigo-100 font-bold">今日の収支</p>
-        <div class="grid grid-cols-3 gap-2 mt-4">
-          <div class="rounded-2xl bg-indigo-700/50 border border-indigo-400/30 p-3"><p class="text-[10px] text-indigo-200">収入</p><p id="summaryIncome" class="text-sm font-black mt-1">¥0</p></div>
-          <div class="rounded-2xl bg-indigo-700/50 border border-indigo-400/30 p-3"><p class="text-[10px] text-indigo-200">支出</p><p id="summaryExpense" class="text-sm font-black mt-1">¥0</p></div>
-          <div class="rounded-2xl bg-white/15 border border-white/20 p-3"><p class="text-[10px] text-indigo-100">差引</p><p id="summaryBalance" class="text-sm font-black mt-1">¥0</p></div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 mt-3 text-center text-[10px]">
-          <div class="bg-black/10 rounded-xl py-2">一般 <b id="summaryGeneral" class="block text-xs">¥0</b></div>
-          <div class="bg-black/10 rounded-xl py-2">医療 <b id="summaryMedical" class="block text-xs">¥0</b></div>
-          <div class="bg-black/10 rounded-xl py-2">固定 <b id="summaryFixed" class="block text-xs">¥0</b></div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-slate-600 flex gap-1"><i data-lucide="chart-no-axes-column" class="w-4 h-4"></i>期間別の推移</h3><button id="refreshHistoryButton" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 rounded-full px-3 py-1.5">更新</button></div><div id="trendList" class="space-y-2"></div></div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4"><h3 class="text-xs font-bold text-slate-600 mb-3">支出カテゴリ内訳 <span class="font-normal text-[9px] text-slate-400">店舗名を優先して集計</span></h3><div id="categoryList" class="space-y-3"></div></div>
-
-
-      <!-- v3.9.2 ビジュアル分析 -->
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
-        <div class="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <h3 class="text-xs font-black text-slate-700 flex items-center gap-1"><i data-lucide="chart-pie" class="w-4 h-4 text-indigo-600"></i>ビジュアル分析</h3>
-            <p class="text-[10px] text-slate-400 mt-1">現在の期間別推移は残したまま、支出の構造をグラフで確認できます。</p>
-          </div>
-          <span id="visualRangeLabel" class="text-[9px] font-black text-indigo-600 bg-indigo-50 rounded-full px-2 py-1 whitespace-nowrap">30日</span>
-        </div>
-        <div class="flex gap-1.5 overflow-auto hidden-scroll pb-2 mb-2">
-          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="7">1週間</button>
-          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="14">2週間</button>
-          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="21">3週間</button>
-          <button class="visual-period-button active whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-indigo-600 bg-indigo-600 text-white" data-days="30">1か月</button>
-          <button class="visual-period-button whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600" data-days="180">180日</button>
-        </div>
-        <div id="visualKpis" class="grid grid-cols-2 gap-2 mb-4"></div>
-        <div class="space-y-4">
-          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
-            <p class="text-[10px] font-bold text-slate-600 mb-2">収入・支出の推移（折れ線）</p>
-            <div class="h-52"><canvas id="cashflowLineChart"></canvas></div>
-          </div>
-          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
-            <p class="text-[10px] font-bold text-slate-600 mb-2">カテゴリ別支出（円グラフ）</p>
-            <div class="h-56"><canvas id="categoryPieChart"></canvas></div>
-          </div>
-          <div class="rounded-2xl border border-slate-100 p-3 bg-slate-50/60">
-            <p class="text-[10px] font-bold text-slate-600 mb-2">用途・使途別支出（棒グラフ）</p>
-            <div class="h-56"><canvas id="purposeBarChart"></canvas></div>
-          </div>
-        </div>
-        <div class="border-t border-slate-100 mt-4 pt-3">
-          <p class="text-[10px] font-bold text-slate-500 mb-2">支出先 TOP5</p>
-          <div id="topStoreList" class="space-y-2"></div>
-        </div>
-      </div>
-
-      <!-- v3.9.2 AIマネーコンサル -->
-      <div class="bg-gradient-to-br from-indigo-950 to-indigo-700 text-white rounded-3xl p-5 shadow-xl shadow-indigo-200/40 mb-4">
-        <div class="flex items-start gap-3">
-          <span class="p-2.5 rounded-2xl bg-white/10"><i data-lucide="brain-circuit" class="w-5 h-5 text-emerald-300"></i></span>
-          <div class="min-w-0">
-            <h3 class="text-sm font-black">AI マネーコンサルタント</h3>
-            <p class="text-[10px] text-indigo-200 mt-1 leading-relaxed">支出傾向を読み、「減らす候補」「維持したい支出」「別用途へ回せる金額」「次にやること」を具体化します。</p>
-            <p class="text-[9px] text-indigo-200/80 mt-1 leading-relaxed">AI診断時は、選択期間の集計値と直近最大40件の支出情報をGemini APIへ送信して分析します。</p>
-          </div>
-        </div>
-        <div class="grid grid-cols-[1fr_auto] gap-2 mt-4">
-          <select id="aiMoneyPeriod" class="w-full p-3 text-xs rounded-xl bg-white text-slate-900 border-0 outline-none">
-            <option value="7">1週間（7日）</option>
-            <option value="14">2週間（14日）</option>
-            <option value="21">3週間（21日）</option>
-            <option value="30" selected>1か月（30日）</option>
-            <option value="180">180日</option>
-          </select>
-          <button id="runMoneyConsultantButton" class="px-4 rounded-xl bg-emerald-400 text-emerald-950 text-[11px] font-black whitespace-nowrap">AI診断</button>
-        </div>
-        <p class="text-[9px] text-indigo-200 mt-2">家計改善の参考情報です。医療・生活必需・家族支出を金額だけで機械的に削減対象にはしません。</p>
-        <div id="moneyConsultantResult" class="hidden mt-4 bg-white/10 border border-white/10 rounded-2xl p-4 text-[11px] leading-relaxed"></div>
-      </div>
-
-
-      <!-- 任意月の集計・支出履歴 -->
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4">
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1"><i data-lucide="calendar-range" class="w-4 h-4 text-indigo-600"></i>月別集計・支出履歴</h3>
-            <p class="text-[10px] text-slate-400 mt-1">確認したい年月を選ぶと、その月の集計と支出明細を表示します。</p>
-          </div>
-          <span id="monthlyExpenseCount" class="text-[10px] font-bold text-indigo-600 whitespace-nowrap">0件</span>
-        </div>
-        <div class="grid grid-cols-[42px_1fr_42px] gap-2 items-center mb-4">
-          <button id="previousMonthButton" class="h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 flex items-center justify-center" title="前の月"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-          <input id="monthlyHistoryMonth" type="month" class="field text-center font-bold">
-          <button id="nextMonthButton" class="h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 flex items-center justify-center" title="次の月"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-        </div>
-        <p id="monthlySummaryTitle" class="text-xs font-black text-slate-800 mb-3">月別集計</p>
-        <div class="grid grid-cols-3 gap-2 mb-3">
-          <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-2.5"><p class="text-[9px] text-emerald-600 font-bold">収入</p><p id="monthlyIncome" class="text-xs font-black text-emerald-700 mt-1">¥0</p></div>
-          <div class="rounded-xl bg-rose-50 border border-rose-100 p-2.5"><p class="text-[9px] text-rose-600 font-bold">支出</p><p id="monthlyExpense" class="text-xs font-black text-rose-700 mt-1">¥0</p></div>
-          <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-2.5"><p class="text-[9px] text-indigo-600 font-bold">差引</p><p id="monthlyBalance" class="text-xs font-black text-indigo-700 mt-1">¥0</p></div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
-          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">一般</p><b id="monthlyGeneral" class="text-[11px] text-slate-700">¥0</b></div>
-          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">医療</p><b id="monthlyMedical" class="text-[11px] text-slate-700">¥0</b></div>
-          <div class="rounded-xl bg-slate-50 border border-slate-100 py-2"><p class="text-[9px] text-slate-400">固定</p><b id="monthlyFixed" class="text-[11px] text-slate-700">¥0</b></div>
-        </div>
-        <div class="border-t border-slate-100 pt-3">
-          <h4 class="text-[10px] font-bold text-slate-500 mb-2">カテゴリ別支出</h4>
-          <div id="monthlyCategoryList" class="space-y-2"></div>
-        </div>
-        <div class="border-t border-slate-100 mt-4 pt-3">
-          <h4 class="text-[10px] font-bold text-slate-500 mb-2">選択月の支出履歴</h4>
-          <div id="monthlyExpenseList" class="space-y-2"></div>
-          <button id="monthlyMoreButton" class="hidden w-full mt-3 bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-[11px] font-bold text-slate-600">この月の履歴をもっと見る</button>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-4 space-y-3">
-        <div class="flex items-center justify-between"><h3 class="text-xs font-bold text-slate-600 flex items-center gap-1"><i data-lucide="search" class="w-4 h-4"></i>履歴を検索・期間指定</h3><span id="historyCount" class="text-[10px] font-bold text-indigo-600">0件</span></div>
-        <input id="historySearch" class="field" placeholder="店舗名・カテゴリ・用途・内容で検索">
-        <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">開始日<input id="historyFrom" type="date" class="field mt-1"></label><label class="text-[10px] font-bold text-slate-400">終了日<input id="historyTo" type="date" class="field mt-1"></label></div>
-        <button id="clearHistoryFilter" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 text-[11px] font-bold text-slate-600">検索条件をクリア</button>
-      </div>
-
-      <div class="flex gap-2 overflow-auto hidden-scroll mb-3 pb-1">
-        <button class="filter-button active bg-slate-900 text-white" data-filter="all">すべて</button>
-        <button class="filter-button" data-filter="収入用">収入</button>
-        <button class="filter-button" data-filter="一般用">一般</button>
-        <button class="filter-button" data-filter="医療費用">医療</button>
-        <button class="filter-button" data-filter="固定支払">固定</button>
-      </div>
-      <div id="historyLoading" class="hidden py-16 text-center text-slate-400"><div class="spinner spinner-dark mx-auto"></div><p class="text-xs mt-3">履歴を読み込み中</p></div>
-      <div id="historyList" class="space-y-3"></div>
-      <button id="moreButton" class="hidden w-full mt-3 mb-6 bg-white border border-slate-200 rounded-xl py-3 text-xs font-bold">もっと見る</button>
-    </section>
-
-    <!-- 固定支払 -->
-    <section id="tab-fixed" class="hidden p-4 min-h-full">
-      <h2 class="font-bold text-sm flex gap-2 items-center mb-4"><span class="p-2 rounded-lg bg-amber-100 text-amber-600"><i data-lucide="calendar-clock" class="w-5 h-5"></i></span>固定支払の登録</h2>
-
-      <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4">
-        <p class="text-xs font-black text-amber-900 flex items-center gap-2"><i data-lucide="scan-line" class="w-4 h-4"></i>写真・画像から固定支払を読み取る</p>
-        <p class="text-[10px] text-amber-700 mt-1 leading-relaxed">電気料金の請求書・通信費・保険料などを撮影すると、支払項目・金額・日付をAIが入力します。保存前に必ず確認できます。</p>
-        <div class="grid grid-cols-2 gap-2 mt-3">
-          <button id="fixedCameraButton" class="h-11 rounded-xl bg-white border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i>カメラ</button>
-          <button id="fixedGalleryButton" class="h-11 rounded-xl bg-white border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="image" class="w-4 h-4"></i>画像を選択</button>
-        </div>
-        <input id="fixedCameraInput" type="file" accept="image/*" capture="environment" class="hidden">
-        <input id="fixedGalleryInput" type="file" accept="image/*" class="hidden">
-        <div id="fixedImageArea" class="hidden mt-3 space-y-3">
-          <div class="relative rounded-xl overflow-hidden bg-slate-900"><img id="fixedImagePreview" class="w-full h-44 object-contain"><button id="clearFixedImageButton" type="button" class="absolute top-2 right-2 p-2 rounded-full bg-black/60 text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-          <button id="fixedOcrButton" class="w-full h-11 rounded-xl bg-amber-500 text-white text-xs font-black flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>AIで固定支払を読み取る</button>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-        <label class="label">支払項目<select id="fixedItem" class="field mt-1"></select></label>
-        <div id="newFixedWrap" class="hidden"><label class="label">新しい項目名<input id="newFixedItem" class="field mt-1" maxlength="60" placeholder="例：サブスク代"></label><button id="registerNewFixedItemButton" type="button" class="w-full mt-2 h-10 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-bold">この項目を追加して選択</button></div>
-        <label class="label">金額<input id="fixedAmount" type="number" min="1" class="field mt-1"></label>
-        <label class="label">支払日<input id="fixedDate" type="date" class="field mt-1"></label>
-        <label class="label">用途・使途<input id="fixedPurpose" list="purposeOptionsList" class="field mt-1" placeholder="例：生活費"></label>
-      </div>
-      <button id="saveFixedButton" class="primary-button mt-5"><i data-lucide="save" class="w-5 h-5"></i><span>固定支払を記録</span></button>
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4 mb-5">
-        <div>
-          <h3 class="font-bold text-sm flex gap-2 items-center"><i data-lucide="list-plus" class="w-5 h-5 text-indigo-600"></i>支払項目マスター</h3>
-          <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">追加した項目はGoogleスプレッドシートに保存され、次回以降もPC・スマホ共通で表示します。追加項目は修正・削除できます。</p>
-        </div>
-        <div class="grid grid-cols-[1fr_auto] gap-2">
-          <input id="fixedMasterNewItem" class="field" maxlength="60" placeholder="例：ガス代、水道代、サブスク代">
-          <button id="addFixedMasterButton" class="px-4 rounded-xl bg-indigo-600 text-white text-xs font-bold">追加</button>
-        </div>
-        <div id="fixedMasterList" class="space-y-2"></div>
-      </div>
-    </section>
-
-    <!-- 設定・取込 -->
-    <section id="tab-settings" class="hidden p-4 min-h-full">
-      <h2 class="font-bold text-sm mb-4">システム設定</h2>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
-        <div id="statusBox" class="text-xs font-bold leading-relaxed p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-950"></div>
-        <label class="label">GASウェブアプリURL<input id="gasUrl" class="field mt-1" placeholder="https://script.google.com/macros/s/.../exec"></label>
-        <div>
-          <label class="label" for="gasToken">合言葉</label>
-          <div class="relative mt-1">
-            <input id="gasToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" class="field pr-20" placeholder="GASで設定した合言葉">
-            <button type="button" id="toggleTokenButton" class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-bold" aria-pressed="false">表示</button>
-          </div>
-        </div>
-        <button id="saveSettingsButton" class="w-full bg-slate-900 text-white rounded-xl py-3.5 text-xs font-bold flex justify-center gap-2"><i data-lucide="save" class="w-4 h-4 text-emerald-300"></i>接続確認して保存</button>
-      </div>
-
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
-        <div>
-          <h3 class="font-bold text-sm flex gap-2 items-center"><i data-lucide="tags" class="w-5 h-5 text-indigo-600"></i>用途・使途マスター</h3>
-          <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">領収書保存前に選べる候補です。ここから追加した用途はパソコン・スマホで共通利用できます。</p>
-        </div>
-        <div class="grid grid-cols-[1fr_auto] gap-2">
-          <input id="newPurposeMaster" class="field" maxlength="40" placeholder="例：孫のため、旅行積立">
-          <button id="addPurposeMasterButton" class="px-4 rounded-xl bg-indigo-600 text-white text-xs font-bold">追加</button>
-        </div>
-        <div id="purposeMasterList" class="flex flex-wrap gap-2"></div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4 mt-4">
-        <div><h3 class="font-bold text-sm flex gap-2"><i data-lucide="file-up" class="w-5 h-5 text-indigo-600"></i>過去データを取り込む</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">CSV・Excel（.xlsx/.xls）または、同じGoogleアカウントで開けるスプレッドシートから取り込めます。見出し名と旧7列形式を自動判定します。</p></div>
-        <input id="importFile" type="file" accept=".csv,.xlsx,.xls" class="block w-full text-xs file:mr-3 file:py-2.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-bold">
-        <button id="importFileButton" class="w-full border border-indigo-200 text-indigo-700 bg-indigo-50 rounded-xl py-3 text-xs font-bold">ファイルから取り込む</button>
-        <div class="flex items-center gap-2"><span class="h-px bg-slate-200 flex-1"></span><span class="text-[10px] text-slate-400">または</span><span class="h-px bg-slate-200 flex-1"></span></div>
-        <input id="importSheetUrl" class="field" placeholder="過去のGoogleスプレッドシートURL">
-        <button id="importSheetButton" class="w-full border border-slate-200 bg-slate-50 rounded-xl py-3 text-xs font-bold">Googleスプレッドシートから取り込む</button>
-        <div id="importResult" class="hidden text-xs rounded-xl p-3 bg-emerald-50 text-emerald-800 border border-emerald-100"></div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4">
-        <div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>安全管理・メンテナンス</h3><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">バックアップ作成、用途列を含む列ズレ点検、削除データの復元ができます。</p></div>
-        <button id="backupButton" class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl py-3 text-xs font-bold">現在のスプレッドシートをバックアップ</button>
-        <button id="repairButton" class="w-full bg-amber-50 text-amber-700 border border-amber-200 rounded-xl py-3 text-xs font-bold">見出し・管理ID・用途列を点検</button>
-        <div id="maintenanceResult" class="hidden text-xs rounded-xl p-3 bg-slate-50 text-slate-700 border border-slate-200 leading-relaxed"></div>
-      </div>
-
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3 mt-4 mb-8">
-        <div class="flex justify-between items-center"><div><h3 class="font-bold text-sm flex items-center gap-2"><i data-lucide="archive-restore" class="w-5 h-5 text-indigo-600"></i>削除済みデータ</h3><p class="text-[10px] text-slate-400 mt-1">直近100件まで確認・復元できます。</p></div><button id="refreshDeletedButton" class="text-[10px] font-bold bg-indigo-50 text-indigo-600 rounded-full px-3 py-1.5">更新</button></div>
-        <div id="deletedList" class="space-y-2"><p class="text-xs text-slate-400 text-center py-4">設定保存後に表示されます</p></div>
-      </div>
-    </section>
-  </main>
-
-  <datalist id="purposeOptionsList"></datalist>
-
-  <nav class="absolute bottom-0 w-full h-16 bg-white border-t border-slate-100 flex z-20">
-    <button class="tab-button active flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="scan"><i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px]">入力</span></button>
-    <button class="tab-button flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="history"><i data-lucide="chart-column" class="w-5 h-5"></i><span class="text-[10px]">収支</span></button>
-    <button class="tab-button flex-1 flex flex-col items-center justify-center text-slate-400 gap-1" data-tab="fixed"><i data-lucide="credit-card" class="w-5 h-5"></i><span class="text-[10px]">固定支払</span></button>
-  </nav>
-</div>
-
-
-<!-- AI読取結果確認モーダル -->
-<div id="ocrConfirmModal" class="hidden fixed inset-0 z-50 bg-black/60 p-4 items-center justify-center">
-  <div class="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[90vh] overflow-auto">
-    <div class="flex justify-between items-center mb-2"><h3 class="font-bold flex items-center gap-2"><i data-lucide="scan-text" class="w-5 h-5 text-indigo-600"></i>AI読取結果を確認</h3><button onclick="closeOcrConfirm()"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-    <p class="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4">金額・日付・店舗名を確認してから保存してください。AIもたまにレシートより自信満々です。</p>
-    <div class="space-y-3">
-      <select id="ocrConfirmType" class="field"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入</option><option value="書類">その他支出</option></select>
-      <input id="ocrConfirmDate" type="date" class="field">
-      <input id="ocrConfirmStore" class="field" placeholder="店舗・支払先・収入元">
-      <input id="ocrConfirmPatient" class="field" placeholder="患者名（医療費のみ）">
-      <input id="ocrConfirmAmount" type="number" min="1" class="field" placeholder="金額">
-      <select id="ocrConfirmCategory" class="field"></select>
-      <input id="ocrConfirmPurpose" list="purposeOptionsList" class="field" placeholder="用途・使途（選択または自由入力）">
-      <input id="ocrConfirmItems" class="field" placeholder="内容・摘要">
-    </div>
-    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeOcrConfirm()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">戻って撮り直す</button><button id="saveOcrConfirmButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold flex justify-center items-center gap-2">確認して保存</button></div>
-  </div>
-</div>
-
-<!-- 編集モーダル -->
-<div id="editModal" class="hidden fixed inset-0 z-50 bg-black/60 p-4 items-center justify-center">
-  <div class="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[90vh] overflow-auto">
-    <div class="flex justify-between items-center mb-4"><h3 class="font-bold">データ修正</h3><button onclick="closeEdit()"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-    <input id="editRecordId" type="hidden"><input id="editSheet" type="hidden">
-    <div class="space-y-3">
-      <select id="editType" class="field"><option value="領収書">一般支出</option><option value="医療費">医療費</option><option value="固定支払">固定支払</option><option value="収入">収入</option><option value="書類">その他支出</option></select>
-      <input id="editDate" type="date" class="field"><input id="editStore" class="field" placeholder="店舗・支払先・収入元"><input id="editPatient" class="field" placeholder="患者名"><input id="editAmount" type="number" class="field"><input id="editCategory" class="field" placeholder="カテゴリ"><input id="editPurpose" list="purposeOptionsList" class="field" placeholder="用途・使途"><input id="editItems" class="field" placeholder="内容・摘要">
-    </div>
-    <div class="grid grid-cols-2 gap-2 mt-5"><button onclick="closeEdit()" class="bg-slate-100 rounded-xl py-3 text-xs font-bold">キャンセル</button><button id="saveEditButton" class="bg-indigo-600 text-white rounded-xl py-3 text-xs font-bold">保存</button></div>
-  </div>
-</div>
-
+<header class="header"><div class="header-inner"><div class="brand-icon" aria-hidden="true">🗓️</div><div class="brand">ビタミン・サプリ管理<div class="v">シンプル版 v2.2・写真AI</div></div><button class="today" data-action="today">今日へ</button></div></header>
+<main><div id="notice" aria-live="polite"></div><div id="content"></div></main>
+<nav class="tabs" aria-label="メニュー">
+<button class="tab active" data-tab="record"><b>🗓️</b>記録</button>
+<button class="tab" data-tab="manage"><b>💊</b>サプリ管理</button>
+<button class="tab" data-tab="history"><b>📋</b>履歴</button>
+<button class="tab" data-tab="settings"><b>⚙️</b>設定</button>
+</nav>
 <script>
-  const $ = (id) => document.getElementById(id);
-  const classes = {
-    field: 'w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500',
-    label: 'block text-xs font-bold text-slate-500',
-    primary: 'w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-500/20 flex justify-center items-center gap-2 active:scale-[.98] transition',
-    filter: 'filter-button whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600'
-  };
-  document.querySelectorAll('.field').forEach(el => el.className += ' ' + classes.field);
-  document.querySelectorAll('.label').forEach(el => el.className += ' ' + classes.label);
-  document.querySelectorAll('.primary-button').forEach(el => el.className += ' ' + classes.primary);
-  document.querySelectorAll('.filter-button').forEach(el => el.className += ' ' + classes.filter);
-
-  let allHistory = [];
-  let analytics = { periods:{ day:emptySummary(), week:emptySummary(), month:emptySummary() }, trends:{ daily:[], weekly:[], monthly:[] }, monthlySummaries:[] };
-  let currentPeriod = 'day';
-  let currentFilter = 'all';
-  let displayCount = 12;
-  let selectedMonth = todayString().slice(0, 7);
-  let monthlyDisplayCount = 10;
-  let imageData = '';
-  let imageMime = '';
-  let pendingOcrData = null;
-  let fixedImageData = '';
-  let fixedImageMime = '';
-  let fixedItemOptions = ['家賃','電気代金','電話・スマホ・ネット代','パソコン代金','自動車保険','借り受け金','車両代金'];
-  let customFixedItemOptions = [];
-  let purposeOptions = ['生活費','旅行・観光','プライベート物','子どものため','嫁のため','医療・健康','仕事・事業','趣味・娯楽','自己投資','貯蓄・予備費','その他'];
-  let customPurposeOptions = [];
-  let visualPeriodDays = 30;
-  const chartInstances = {};
-
-  const expenseCategories = ['食費','外食','ドラックストア','コンビニ','日用品','消耗品費','交通費','通信費','接待交際費','診療・治療','医薬品購入','固定費','その他'];
-  const incomeCategories = ['売上','給与','年金','給付金','返金','その他収入'];
-
-  function emptySummary(){ return { income:0, expense:0, balance:0, total:0, general:0, medical:0, fixed:0, categories:{}, categoryCounts:{}, purposes:{}, purposeCounts:{}, count:0 }; }
-  function money(v){ return '¥' + Number(v || 0).toLocaleString(); }
-  function todayString(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-  function canonicalCategoryLabelClient(value){
-    const raw = String(value || '').trim();
-    if(!raw) return '';
-    if(/(^|\s)(drug\s*&?\s*store|drugstore)(\s|$)/i.test(raw) || /ドラッグストアー?|ドラックストアー?/i.test(raw)) return 'ドラックストア';
-    if(/(^|\s)(convenience\s*store|convenience)(\s|$)/i.test(raw) || /コンビニ/i.test(raw)) return 'コンビニ';
-    return raw;
+'use strict';
+// GASのURLをこの定数へ設定すれば、ブラウザの保存データ削除後も再入力不要です。
+// 設定画面から登録するだけでも使用できます。
+const DEFAULT_GAS_URL = '';
+const URL_KEY = 'supp_simple_gas_url';
+function oldGasUrl(){
+ const direct=safeStorageGet('gasUrl');if(direct)return direct;
+ try {const x=JSON.parse(safeStorageGet('supplement_app_v2_snapshot')||'null');return x?.gasUrl||'';}catch(e){return '';}
+}
+const PENDING_KEY = 'supp_simple_pending';
+const VERSION = '2.2.0';
+const TIMES = [{id:'morning',name:'朝',symbol:'☀️'},{id:'afternoon',name:'昼',symbol:'🌤️'},{id:'evening',name:'夜',symbol:'🌙'}];
+const app={tab:'record',date:todayDate(),gasUrl:DEFAULT_GAS_URL||safeStorageGet(URL_KEY)||oldGasUrl()||'',supplements:[],logs:{},loaded:false,busy:false,message:'',kind:'',editing:null,historyRows:0,spreadsheet:'',pending:null,aiConfigured:false,ai:{dataUrl:'',previewName:'',analyzing:false,error:'',result:null},draft:null};
+function todayDate(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function safeStorageGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function safeStorageSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
+function safeStorageDelete(k){try{localStorage.removeItem(k);}catch(e){}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function validateUrl(raw){let s=String(raw||'').trim();s=s.replace(/\/edit(?:\?.*)?$/,'/exec');if(!/^https:\/\/script\.google\.com\/macros\/s\/[-\w]+\/exec(?:\?.*)?$/.test(s))throw new Error('GASのURL（https://script.google.com/macros/s/.../exec）を入力してください。');return s;}
+function alertMsg(message,kind='warn'){app.message=message;app.kind=kind;paintNotice();}
+function paintNotice(){const el=document.getElementById('notice');el.innerHTML=app.message?`<div class="notice ${esc(app.kind)}" role="status">${esc(app.message)}</div>`:'';}
+function setBusy(x){app.busy=!!x;render();}
+function newId(prefix){const rnd=window.crypto?.randomUUID?.()||('t'+Date.now().toString(36)+Math.random().toString(36).slice(2));return prefix+String(rnd).replace(/[^a-zA-Z0-9_-]/g,'');}
+function jsonp(action,params={},timeout=17000){return new Promise((resolve,reject)=>{
+  const cb='suppCb_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);let done=false;
+  const s=document.createElement('script');s.async=true;
+  const finish=(err,data)=>{if(done)return;done=true;clearTimeout(timer);s.remove();delete window[cb];err?reject(err):resolve(data);};
+  window[cb]=result=>finish(null,result);
+  const timer=setTimeout(()=>finish(new Error('応答がありません。GASのデプロイ設定やURLを確認してください。')),timeout);
+  s.onerror=()=>finish(new Error('GASを読み込めません。公開設定・URL・ネット接続を確認してください。'));
+  const url=new URL(validateUrl(app.gasUrl));url.searchParams.set('action',action);url.searchParams.set('callback',cb);url.searchParams.set('_',Date.now());
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));s.src=url.toString();document.head.appendChild(s);
+});}
+async function readState(silent=false){
+  if(!app.gasUrl){app.loaded=false;render();return;}
+  app.busy=true;render();
+  try{
+    const r=await jsonp('state');
+    if(!r?.ok || r.version!==VERSION || !Array.isArray(r.supplements))throw new Error(r?.error||'GASがv2.2ではありません。付属のCode.gsを貼り、既存のデプロイを「新バージョン」で更新してください。');
+    app.supplements=r.supplements;app.logs=r.logs||{};app.loaded=true;app.spreadsheet=r.spreadsheet||'';app.historyRows=Number(r.historyRows||0);app.aiConfigured=!!r.aiConfigured;
+    if(!silent)alertMsg('Googleスプレッドシートから読み込みました。','good');
+    return true;
+  }catch(e){app.loaded=false;alertMsg(e.message,'error');return false;}
+  finally{app.busy=false;render();}
+}
+async function verifyWrite(id){
+  for(let i=0;i<4;i++){
+    await new Promise(r=>setTimeout(r,i===0?300:1200));
+    try{const r=await jsonp('ack',{requestId:id},13000);if(r?.ok && r.found)return true;}catch(e){}
   }
-
-  function classifyStoreCategoryClient(store){
-    const name = String(store || '');
-    if(/drug\s*&?\s*store|drugstore|food\s*&?\s*drug|ドラッグストア|ドラックストア|コスモス|cosmos|クスリのアオキ|くすりのアオキ|アオキ|genky|ゲンキー|ゲンキ|v[・\-\s]*drug|vドラッグ|ウエルシア|ウェルシア|マツモトキヨシ|マツキヨ|スギ薬局|スギドラッグ|ツルハ|サンドラッグ|ココカラファイン|キリン堂|クリエイト|薬王堂|カワチ|セイムス|ザグザグ|ウォンツ|レデイ薬局|ダイコクドラッグ/i.test(name)) return 'ドラックストア';
-    if(/convenience\s*store|convenience|コンビニ|セブン[\s\-ー・]*イレブン|7[\s\-]*eleven|family\s*mart|ファミリーマート|ファミマ|lawson|ローソン|ministop|ミニストップ|デイリーヤマザキ|newdays|ニューデイズ|セイコーマート|ポプラ|ヤマザキショップ/i.test(name)) return 'コンビニ';
-    return '';
+  return false;
+}
+async function saveAction(payload){
+  if(!app.gasUrl){app.tab='settings';alertMsg('先に設定画面へGASのURLを入力してください。','warn');render();return false;}
+  if(app.busy)return false;
+  const event={...payload,requestId:newId('req_')};
+  // 端末内の保存が使えない場合でも、Googleへの書き込みは妨げません。
+  safeStorageSet(PENDING_KEY,JSON.stringify(event));
+  return sendEvent(event);
+}
+async function sendEvent(event){
+  setBusy(true);alertMsg('Googleスプレッドシートへ送信し、保存完了を確認しています…','warn');
+  let sendError='';
+  try{
+    // Google Apps Scriptは別ドメインにリダイレクトするため、POSTはno-corsで送信。
+    // 送っただけでは成功扱いせず、下のJSONP確認で実際の保存結果をチェックします。
+    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000);
+    try{await fetch(validateUrl(app.gasUrl),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(event),signal:ctrl.signal});}
+    finally{clearTimeout(timer);}
+  }catch(e){sendError=e?.message||'送信時に通信エラーが発生しました';}
+  const ok=await verifyWrite(event.requestId);
+  if(ok){
+    safeStorageDelete(PENDING_KEY);app.pending=null;
+    setBusy(false);
+    const refreshed=await readState(true);
+    alertMsg(refreshed?'スプレッドシートに保存できました。':'保存は確認できました。表示更新に失敗したため「再読込」を押してください。',refreshed?'good':'warn');
+    return true;
   }
+  app.pending=event;setBusy(false);
+  alertMsg('保存を確認できませんでした。'+(sendError?'（'+sendError+'）':'')+' 設定画面の「未確認の送信を再試行」を押してください。','error');
+  return false;
+}
+async function retryPending(){if(!app.pending||app.busy)return;await sendEvent(app.pending);}
+async function saveGasUrl(e){e.preventDefault();const input=document.getElementById('gas-url');try{
+  const value=validateUrl(input.value);
+  if(app.pending && app.gasUrl && app.gasUrl!==value && !confirm('未確認の送信が残っています。別のGASへ切り替えますか？'))return;
+  app.gasUrl=value;safeStorageSet(URL_KEY,value);app.pending=null;safeStorageDelete(PENDING_KEY);app.loaded=false;
+  await readState();
+}catch(e){alertMsg(e.message,'error');}}
+function activeSupps(){return app.supplements.filter(s=>!s.deleted);}
+function countRecorded(date){const o=app.logs[date]||{};let n=0;TIMES.forEach(t=>{Object.values(o[t.id]||{}).forEach(v=>{if(Number(v)>0)n++;});});return n;}
+function dayLog(date,t,id){return Math.max(0,Number(app.logs[date]?.[t]?.[id]||0));}
+function renderRecord(){if(!app.loaded)return `<section class="card teal"><h2>服用記録</h2><div class="empty">Googleスプレッドシートに接続すると、日々の服用を記録できます。</div><button class="btn full" data-tab="settings">GASのURLを設定する</button></section>`;
+const active=activeSupps();
+let html=`<section class="card teal"><div class="date-selector"><button class="arrow" data-action="day-prev" aria-label="前日">‹</button><input class="input date" type="date" id="record-date" value="${esc(app.date)}" aria-label="記録の日付"><button class="arrow" data-action="day-next" aria-label="翌日">›</button></div><p class="small muted bold" style="text-align:center">日付を選び、服用したサプリを記録</p><div class="total">この日の服用記録：${countRecorded(app.date)}件</div></section>`;
+if(!active.length)return html+`<section class="card"><h2>サプリが未登録です</h2><p>まず名前と朝・昼・夜の目安を登録してください。</p><button class="btn full" data-tab="manage">サプリを登録する</button></section>`;
+TIMES.forEach(t=>{
+ html+=`<section class="card"><h2>${t.symbol} ${t.name}の記録</h2>`;
+ active.forEach(s=>{
+ const existing=dayLog(app.date,t.id,s.id),plan=Math.max(0,Number(s[t.id])||0);
+ html+=`<div class="pill-item"><div class="grow"><div class="pill-name">${esc(s.name)}</div><div class="pill-info">目安：${plan}粒 ${existing?'/ 記録済み：'+existing+'粒':''}</div></div><div class="row"><input aria-label="${esc(s.name)} ${t.name}の量" class="input num" type="number" min="0" max="100" step="1" id="dose-${esc(t.id)}-${esc(s.id)}" value="${existing||plan||1}"><span class="small bold">粒</span><button class="btn tiny ${existing?'recorded':''}" data-action="record" data-timing="${t.id}" data-id="${esc(s.id)}" ${app.busy?'disabled':''}>${existing?'変更する':'記録する'}</button>${existing?`<button class="btn tiny ghost" data-action="cancel" data-timing="${t.id}" data-id="${esc(s.id)}" ${app.busy?'disabled':''}>取消</button>`:''}</div></div>`;
+ });
+ html+='</section>';
+});return html;}
+function captureDraft(){
+ const form=document.getElementById('supp-form');if(!form)return;
+ app.draft={name:form.querySelector('#supp-name')?.value||'',morning:form.querySelector('#supp-morning')?.value||'0',afternoon:form.querySelector('#supp-afternoon')?.value||'0',evening:form.querySelector('#supp-evening')?.value||'0',aiIngredients:form.querySelector('#supp-ingredients')?.value||'',aiServing:form.querySelector('#supp-serving')?.value||'',aiSummary:form.querySelector('#supp-summary')?.value||'',aiCautions:form.querySelector('#supp-cautions')?.value||''};
+}
+function supplementDraft(s){return {name:s?.name||'',morning:s?.morning??0,afternoon:s?.afternoon??0,evening:s?.evening??0,aiIngredients:s?.aiIngredients||'',aiServing:s?.aiServing||'',aiSummary:s?.aiSummary||'',aiCautions:s?.aiCautions||''};}
+function renderManage(){if(!app.loaded)return `<section class="card"><h2>サプリ管理</h2><p>先にGASへ接続してください。</p><button class="btn" data-tab="settings">設定へ</button></section>`;
+const edit=app.editing&&app.supplements.find(s=>s.id===app.editing);const d=app.draft||supplementDraft(edit);
+let html=`<section class="card teal"><h2>📷 写真からAIで読み取る</h2><p class="small">サプリのパッケージや成分表示を撮影すると、名前・表示成分・服用目安を読み取ります。撮影した写真そのものはスプレッドシートに保存しません。</p>
+<label class="label" for="supp-photo">パッケージ写真を選択・撮影</label><input class="input" id="supp-photo" type="file" accept="image/*" aria-label="サプリのパッケージ写真" ${app.ai.analyzing?'disabled':''}>
+${app.ai.dataUrl?`<img class="photo-preview" src="${app.ai.dataUrl}" alt="分析する画像のプレビュー"><p class="small muted">選択画像：${esc(app.ai.previewName)}</p>`:''}
+<button class="btn full" data-action="analyze" ${(!app.ai.dataUrl||app.ai.analyzing||app.busy)?'disabled':''} style="margin-top:12px">${app.ai.analyzing?'<span class="spinner"></span>写真を解析中…':'✨ 写真をAI分析して自動入力'}</button>
+${app.ai.error?`<div class="notice error" role="alert" style="margin-top:11px">${esc(app.ai.error)}</div>`:''}
+${!app.aiConfigured?`<div class="notice warn" style="margin-top:11px">GASのGemini APIキーが未確認です。設定画面の案内をご覧ください。</div>`:''}
+${app.ai.result?`<div class="ai-result" aria-live="polite"><h3>🔎 AIの読み取り結果</h3><p><b>製品名：</b>${esc(app.ai.result.name||'読み取り不可')}</p><p><b>成分：</b>${esc(app.ai.result.ingredients||'読み取り不可')}</p><p><b>表示の目安：</b>${esc(app.ai.result.serving||'読み取り不可')}</p><p><b>特徴：</b>${esc(app.ai.result.summary||'情報不足')}</p><p><b>注意：</b>${esc(app.ai.result.cautions||'表示を確認してください')}</p>${app.ai.result.unreadable?`<p class="small muted">読み取りにくい箇所：${esc(app.ai.result.unreadable)}</p>`:''}<p class="small bold">↓ 下の登録フォームに反映しました。内容を確認してから保存してください。</p></div>`:''}
+<p class="small muted">※ 正確に読み取るには表面と成分・摂取目安が見える裏面を、それぞれ撮影して確認してください。AIの読み取りは誤ることがあります。</p></section>`;
+html+=`<section class="card teal"><h2>${edit?'サプリを編集':'サプリを追加'}</h2><form id="supp-form"><label class="label" for="supp-name">サプリ名</label><input class="input" id="supp-name" maxlength="100" required autocomplete="off" value="${esc(d.name)}" placeholder="例：ビタミンC"><div class="formgrid" style="margin:14px 0">${TIMES.map(t=>`<label>${t.name}（粒）<input class="input" id="supp-${t.id}" type="number" min="0" max="100" step="1" required value="${esc(d[t.id])}"></label>`).join('')}</div><p class="small muted">朝・昼・夜はラベルに時間帯の明記がある場合のみAI入力します。実際に飲む量や時間はご自身で確認してください。</p>
+<details class="details" ${(d.aiIngredients||d.aiServing||d.aiSummary||d.aiCautions)?'open':''}><summary>写真AIで読み取った成分・説明（編集できます）</summary>
+<label class="label" for="supp-ingredients">成分表示</label><textarea class="input" id="supp-ingredients" rows="2" maxlength="800">${esc(d.aiIngredients)}</textarea>
+<label class="label" for="supp-serving">ラベルの服用目安</label><textarea class="input" id="supp-serving" rows="2" maxlength="400">${esc(d.aiServing)}</textarea>
+<label class="label" for="supp-summary">成分についての説明</label><textarea class="input" id="supp-summary" rows="2" maxlength="700">${esc(d.aiSummary)}</textarea>
+<label class="label" for="supp-cautions">注意事項</label><textarea class="input" id="supp-cautions" rows="2" maxlength="700">${esc(d.aiCautions)}</textarea></details>
+<button class="btn full" type="submit" ${app.busy?'disabled':''} style="margin-top:12px">${edit?'変更を保存':'サプリを登録'}</button>${edit?`<button class="btn ghost full" type="button" data-action="edit-cancel" style="margin-top:8px">編集をやめる</button>`:''}</form></section>`;
+html+=`<section class="card"><h2>登録済みサプリ（${activeSupps().length}件）</h2>`;
+if(!activeSupps().length)html+='<div class="empty">まだ登録されていません。</div>';
+activeSupps().forEach(s=>{html+=`<div class="supp-row"><div class="line between"><div class="grow"><div class="pill-name">${esc(s.name)}</div><div class="pill-info">朝 ${Number(s.morning)||0}粒 / 昼 ${Number(s.afternoon)||0}粒 / 夜 ${Number(s.evening)||0}粒</div>${s.aiIngredients?`<div class="pill-info">AI成分メモ：${esc(String(s.aiIngredients).slice(0,110))}</div>`:''}</div><button class="btn ghost tiny" data-action="edit" data-id="${esc(s.id)}">編集</button><button class="btn red tiny" data-action="delete" data-id="${esc(s.id)}">削除</button></div></div>`;});
+return html+'</section>';}
+function renderHistory(){if(!app.loaded)return `<section class="card"><h2>服用履歴</h2><p>先にGASへ接続してください。</p></section>`;
+const days=Object.keys(app.logs).filter(d=>countRecorded(d)>0).sort((a,b)=>b.localeCompare(a));
+let html=`<section class="card teal"><h2>服用履歴</h2><p class="small muted">Googleスプレッドシートにある履歴を表示しています。${app.historyRows}行を確認。</p><button class="btn ghost" data-action="refresh">Googleから再読込</button><button class="btn ghost" style="margin-left:5px" data-action="csv">CSVで保存</button></section><section class="card">`;
+if(!days.length)return html+'<div class="empty">表示できる服用履歴はまだありません。</div></section>';
+days.forEach(day=>{let lines='';TIMES.forEach(t=>{Object.entries(app.logs[day]?.[t.id]||{}).forEach(([id,amount])=>{if(Number(amount)<=0)return;let s=app.supplements.find(s=>s.id===id);lines+=`<div class="history-line"><span>${t.name}：${esc(s?.name||id)}</span><strong>${Number(amount)} 粒</strong></div>`;});});
+ html+=`<div class="history-group"><div class="line between"><span class="history-date">${esc(day)}（${countRecorded(day)}件）</span><button class="btn ghost tiny" data-action="jump" data-date="${esc(day)}">この日を開く</button></div>${lines}</div>`;
+});return html+'</section>';}
+function renderSettings(){return `<section class="card teal"><h2>Googleスプレッドシート設定</h2><p class="small"><strong>服用履歴の同期はGASのURLだけ。</strong> 同期キー・setupCloudSyncは不要です。</p><form id="gas-form"><label class="label" for="gas-url">GAS ウェブアプリ URL</label><input class="input" id="gas-url" type="url" required inputmode="url" spellcheck="false" autocomplete="url" value="${esc(app.gasUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><button class="btn full" type="submit" ${app.busy?'disabled':''} style="margin-top:12px">URLを保存して接続</button></form><hr class="divider"><div class="notice ${app.loaded?'good':'warn'}"><div class="status">${app.loaded?'✅ 接続済み':'● 未接続'}</div>${app.loaded?`<p class="small">保存先：${esc(app.spreadsheet)}</p>`:''}</div><button class="btn ghost full" data-action="refresh" ${app.busy?'disabled':''}>スプレッドシートを再読込</button>${app.pending?`<div class="notice warn"><b>⚠ 保存完了を確認できていない操作が1件あります。</b><button class="btn full" data-action="retry" ${app.busy?'disabled':''} style="margin-top:9px">未確認の送信を再試行</button></div>`:''}<p class="small muted">スマホの保存データを削除してもGoogleの履歴は消えません。同じGAS URLを入れると復元できます。</p></section><section class="card"><h2>✨ 写真AIの設定</h2><div class="notice ${app.aiConfigured?'good':'warn'}">${app.aiConfigured?'✅ Gemini APIキーを確認しました（実際の解析結果は写真から確認してください）':'⚠ Gemini APIキーがまだ設定されていないか、接続確認前です。'}</div><p>写真AIだけ、GASの「プロジェクトの設定」→「スクリプト プロパティ」に <code>GEMINI_API_KEY</code> を1回登録してください。以前の設定が残っていれば再設定不要です。</p><p class="small muted">使用モデル：Gemini 3.1 Flash-Lite。API利用料が発生する場合があります。APIキーはアプリやGitHubに貼らないでください。画像は解析時のみGeminiへ送ります。</p></section><section class="card"><h2>データについて</h2><p>服用履歴・サプリ一覧・AI読み取りメモはスプレッドシートに保存します。写真そのものは保存しません。</p><p class="small muted">※ GASを「全員」に公開するとURLを知っている人が記録を変更でき、写真AIによりAPI費用が生じ得ます。共有には注意してください。</p><button class="btn ghost full" data-action="csv">服用履歴をCSVで保存</button></section>`;}
+function render(){paintNotice();document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===app.tab));
+const area=document.getElementById('content');let html='';if(app.busy)html='<div class="notice"><span class="spinner"></span>Googleと通信しています…</div>';
+html+=app.tab==='manage'?renderManage():app.tab==='history'?renderHistory():app.tab==='settings'?renderSettings():renderRecord();area.innerHTML=html;
+}
+async function recordDose(id,timing,clear){if(!app.loaded||app.busy)return;const s=app.supplements.find(x=>x.id===id);if(!s)return;
+const amount=clear?0:Number(document.getElementById('dose-'+timing+'-'+id)?.value);
+if(!Number.isInteger(amount)||amount<0||amount>100){alertMsg('粒数は0～100の整数で入力してください。','error');return;}
+await saveAction({action:'record',date:app.date,timing,suppId:s.id,suppName:s.name,amount});}
+async function saveSupplement(e){e.preventDefault();if(app.busy||!app.loaded)return;
+const name=document.getElementById('supp-name').value.trim();const amounts={};for(const t of TIMES){const n=Number(document.getElementById('supp-'+t.id).value);if(!Number.isInteger(n)||n<0||n>100){alertMsg('朝・昼・夜は0～100の整数で入力してください。','error');return;}amounts[t.id]=n;}
+if(!name){alertMsg('サプリ名を入力してください。','error');return;}
+captureDraft();
+const id=app.editing||newId('supp_');
+const aiFields={aiIngredients:document.getElementById('supp-ingredients').value.trim().slice(0,800),aiServing:document.getElementById('supp-serving').value.trim().slice(0,400),aiSummary:document.getElementById('supp-summary').value.trim().slice(0,700),aiCautions:document.getElementById('supp-cautions').value.trim().slice(0,700)};
+const done=await saveAction({action:'supplement',supplement:{id,name,...amounts,...aiFields,deleted:false}});
+if(done){app.editing=null;app.draft=null;app.ai={dataUrl:'',previewName:'',analyzing:false,error:'',result:null};render();}}
+async function deleteSupplement(id){const s=app.supplements.find(x=>x.id===id);if(!s||app.busy)return;if(!confirm(`「${s.name}」を登録一覧から外しますか？\n服用履歴は削除されません。`))return;
+await saveAction({action:'supplement',supplement:{...s,deleted:true}});}
+async function choosePhoto(file){
+ if(!file)return;
+ captureDraft();app.ai.error='';app.ai.result=null;app.ai.dataUrl='';app.ai.previewName='';
+ if(!file.type.startsWith('image/')){app.ai.error='画像ファイルを選んでください（JPEG/PNG推奨）。';render();return;}
+ if(file.size>20*1024*1024){app.ai.error='元の写真が20MBを超えています。小さめの写真を選んでください。';render();return;}
+ try{
+  const img=await new Promise((resolve,reject)=>{const im=new Image();const url=URL.createObjectURL(file);im.onload=()=>{URL.revokeObjectURL(url);resolve(im)};im.onerror=()=>{URL.revokeObjectURL(url);reject(Error('この画像形式を開けません。JPEG/PNGで撮影してください。'))};im.src=url;});
+  const max=1400,ratio=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.naturalWidth*ratio));c.height=Math.max(1,Math.round(img.naturalHeight*ratio));c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  let data=c.toDataURL('image/jpeg',.78);if(data.length>1000000)data=c.toDataURL('image/jpeg',.55);
+  if(data.length>1000000)throw Error('画像を縮小できませんでした。写真を撮り直してください。');
+  app.ai.dataUrl=data;app.ai.previewName=file.name;render();
+ }catch(err){app.ai.error=err.message||'画像の読み込みに失敗しました。';render();}
+}
+async function analyzePhoto(){
+ if(app.ai.analyzing||app.busy)return;
+ if(!app.ai.dataUrl){app.ai.error='先に写真を選んでください。';render();return;}
+ if(!app.gasUrl){app.tab='settings';alertMsg('先にGAS URLを設定してください。','warn');render();return;}
+ captureDraft();app.ai.analyzing=true;app.ai.error='';app.ai.result=null;render();
+ const requestId=newId('img_');
+ try{
+  const body=JSON.stringify({action:'analyzeImage',requestId,imageData:app.ai.dataUrl});
+  // doPostの応答はGoogleのリダイレクトで読めない。GET(JSONP)で解析結果を安全に取得する。
+  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),75000);
+  const post=fetch(validateUrl(app.gasUrl),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body,signal:ctrl.signal}).catch(()=>null).finally(()=>clearTimeout(timer));
+  let result=null;
+  const deadline=Date.now()+90000;
+  while(Date.now()<deadline){
+   await new Promise(r=>setTimeout(r,1800));
+   try{const r=await jsonp('aiResult',{requestId},12000);
+    if(r?.ok && r.status==='done'){result=r.result;break;}
+    if(r?.status==='error'||(r?.ok===false&&r.error)){const ex=Error(r.error||'写真解析でエラーが発生しました。');ex.isAIError=true;throw ex;}
 
-  function normalizeCategoryClient(category, store, sourceSheet, type){
-    const raw = canonicalCategoryLabelClient(category);
-    if(type === '収入' || sourceSheet === '収入用') return raw || '収入';
-    if(type === '医療費' || sourceSheet === '医療費用') return raw || '未分類';
-    if(type === '固定支払' || sourceSheet === '固定支払') return raw || '固定費';
-    const byStore = classifyStoreCategoryClient(store);
-    if(byStore) return byStore;
-    return raw || '未分類';
+   }catch(err){if(err.isAIError)throw err;/* 一時的なJSONP通信失敗は次のポーリングで再試行 */}
   }
-
-  function parseYmdClient(value){
-    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if(!match) return null;
-    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  function normalizeHistoryItemClient(item){
-    const out = {...(item || {})};
-    if(!parseYmdClient(out.date) && parseYmdClient(out.type)){
-      const oldDate = out.date;
-      out.date = out.type;
-      out.type = oldDate;
-    }
-    out.category = normalizeCategoryClient(out.category, out.store, out.sourceSheet, out.type);
-    out.purpose = String(out.purpose || '').trim();
-    out.amount = Number(out.amount || 0);
-    return out;
-  }
-
-  function summarizeRecordsClient(records, start, end){
-    const s = emptySummary();
-    records.forEach(item => {
-      const d = parseYmdClient(item.date);
-      if(!d || d < start || d >= end) return;
-      const amount = Number(item.amount || 0);
-      s.count++;
-      const income = item.type === '収入' || item.sourceSheet === '収入用';
-      if(income){
-        s.income += amount;
-      } else {
-        s.expense += amount;
-        s.total += amount;
-        if(item.sourceSheet === '一般用') s.general += amount;
-        if(item.sourceSheet === '医療費用') s.medical += amount;
-        if(item.sourceSheet === '固定支払') s.fixed += amount;
-        const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
-        s.categories[category] = (s.categories[category] || 0) + amount;
-        s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
-        const purpose = String(item.purpose || '未設定').trim() || '未設定';
-        s.purposes[purpose] = (s.purposes[purpose] || 0) + amount;
-        s.purposeCounts[purpose] = (s.purposeCounts[purpose] || 0) + 1;
-      }
-    });
-    s.balance = s.income - s.expense;
-    return s;
-  }
-
-  function startOfWeekClient(date){
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const day = d.getDay();
-    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-    return d;
-  }
-
-  function buildPeriodsClient(records){
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-    const week = startOfWeekClient(today);
-    const nextWeek = new Date(week); nextWeek.setDate(nextWeek.getDate() + 7);
-    const month = new Date(today.getFullYear(), today.getMonth(), 1);
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    return {
-      day:summarizeRecordsClient(records, today, tomorrow),
-      week:summarizeRecordsClient(records, week, nextWeek),
-      month:summarizeRecordsClient(records, month, nextMonth)
-    };
-  }
-
-  function buildTrendsClient(records){
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const make = (unit, count) => {
-      const rows = [];
-      for(let i=count-1; i>=0; i--){
-        let start, end, label;
-        if(unit === 'day'){
-          start = new Date(today); start.setDate(start.getDate() - i);
-          end = new Date(start); end.setDate(end.getDate() + 1);
-          label = `${start.getMonth()+1}/${start.getDate()}`;
-        }else if(unit === 'week'){
-          start = startOfWeekClient(today); start.setDate(start.getDate() - (7*i));
-          end = new Date(start); end.setDate(end.getDate() + 7);
-          label = `${start.getMonth()+1}/${start.getDate()}週`;
-        }else{
-          start = new Date(today.getFullYear(), today.getMonth() - i, 1);
-          end = new Date(start.getFullYear(), start.getMonth()+1, 1);
-          label = `${start.getFullYear()}/${start.getMonth()+1}`;
-        }
-        const s = summarizeRecordsClient(records, start, end);
-        rows.push({label, income:s.income, expense:s.expense, balance:s.balance});
-      }
-      return rows;
-    };
-    return {daily:make('day',31), weekly:make('week',12), monthly:make('month',12)};
-  }
-
-  // 端末保存。github.io は他のアプリと保存領域を共有するため、満杯でも動くよう
-  // localStorage → 不要キー削除して再試行 → Cookie の順に退避する。
-  const store = {
-    get(key){
-      try { const v = localStorage.getItem(key); if(v !== null) return v; } catch(e) {}
-      const m = document.cookie.split('; ').find(c => c.startsWith('yz_' + key + '='));
-      return m ? decodeURIComponent(m.slice(('yz_' + key + '=').length)) : null;
-    },
-    set(key, value){
-      value = String(value);
-      const cookie = () => { document.cookie = 'yz_' + key + '=' + encodeURIComponent(value) + '; max-age=31536000; path=/; SameSite=Strict; Secure'; };
-      try { localStorage.setItem(key, value); this.dropCookie(key); return; } catch(e) {}
-      try { localStorage.removeItem('yuzuFixedItems'); localStorage.setItem(key, value); this.dropCookie(key); return; } catch(e) {}
-      cookie();
-    },
-    remove(key){
-      try { localStorage.removeItem(key); } catch(e) {}
-      this.dropCookie(key);
-    },
-    dropCookie(key){ document.cookie = 'yz_' + key + '=; max-age=0; path=/'; }
-  };
-
-  const APP_VERSION = '3.10.1';
-  let authWarned = false;
-
-  function connected(){ return /^https:\/\/script\.google\.com\//.test(store.get('yuzuGasUrl') || ''); }
-  function escapeHtml(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-
-  function toast(message, error=false){
-    $('toastText').textContent = message;
-    $('toast').classList.toggle('bg-red-600', error);
-    $('toast').classList.toggle('bg-slate-900', !error);
-    $('toastIcon').setAttribute('data-lucide', error ? 'circle-alert' : 'check-circle');
-    $('toastIcon').className = `w-5 h-5 ${error ? 'text-red-100' : 'text-emerald-300'}`;
-    lucide.createIcons();
-    $('toast').classList.remove('toast-hide');
-    $('toast').classList.add('toast-show');
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(() => {
-      $('toast').classList.add('toast-hide');
-      $('toast').classList.remove('toast-show');
-    }, 3800);
-  }
-
-  function normalizeGasUrl(raw){
-    const url = String(raw || '').trim().replace(/[?#].*$/, '').replace(/\/$/, '');
-    if(/\/dev$/.test(url)) throw new Error('テスト用の /dev URLではなく、末尾が /exec のウェブアプリURLを使用してください。');
-    if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
-      throw new Error('GAS URLが正しくありません。末尾が /exec のURLをコピーしてください。');
-    }
-    return url;
-  }
-
-  async function api(payload, overrideUrl='', overrideToken=null){
-    const savedUrl = overrideUrl || store.get('yuzuGasUrl') || '';
-    const endpoint = normalizeGasUrl(savedUrl);
-    const controller = new AbortController();
-    const timeoutMs = payload && payload.action === 'call_gemini' ? 90000 : 45000;
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let response;
-    try {
-      response = await fetch(endpoint, {
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify(Object.assign({}, payload, { token: overrideToken !== null ? overrideToken : (store.get('yuzuToken') || '') })),
-        redirect:'follow',
-        cache:'no-store',
-        signal:controller.signal
-      });
-    } catch(e) {
-      const detail = e && e.name === 'AbortError' ? `接続が${Math.round(timeoutMs/1000)}秒でタイムアウトしました。` : `GASへ接続できませんでした（${e && e.message ? e.message : '通信失敗'}）。`;
-      throw new Error(detail + ' デプロイを「次のユーザーとして実行：自分」「アクセスできるユーザー：全員」にし、/exec URLを確認してください。');
-    } finally {
-      clearTimeout(timer);
-    }
-    if(!response.ok) throw new Error(`GAS通信エラー（HTTP ${response.status}）です。デプロイ設定を確認してください。`);
-    const text = await response.text();
-    let result;
-    try { result = JSON.parse(text); }
-    catch(e) { throw new Error('GASからJSONが返りません。新しいバージョンで再デプロイし、/exec URLを使用してください。'); }
-    if(!result.success) throw Object.assign(new Error(result.error || '処理に失敗しました。'), { result });
-    return result;
-  }
-
-  async function withButton(button, working, fn){
-    const old = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<span class="spinner"></span><span>${escapeHtml(working)}</span>`;
-    try { return await fn(); }
-    finally { button.disabled = false; button.innerHTML = old; lucide.createIcons(); }
-  }
-
-  function updateMode(){
-    const ok = connected();
-    $('modeText').textContent = ok ? '本番運用中' : 'GAS未設定';
-    $('modeButton').classList.toggle('bg-emerald-700/70', ok);
-    $('modeButton').classList.toggle('bg-red-700/70', !ok);
-    $('statusBox').innerHTML = ok
-      ? '<strong>本番運用モード</strong>です。登録・修正・削除・集計はGoogleスプレッドシートと同期します。削除データは「削除済み」シートへ退避されます。'
-      : '<strong class="text-red-600">GAS URLが未設定です。</strong><br>誤って端末内だけへ保存することはありません。URLを設定するまで登録操作は停止します。';
-    $('savedPlace').textContent = ok ? 'Googleスプレッドシートに保存されました' : '保存先が未設定です';
-  }
-
-  function renderPurposeOptions(){
-    const list = Array.from(new Set((purposeOptions || []).map(x => String(x || '').trim()).filter(Boolean)));
-    $('purposeOptionsList').innerHTML = list.map(x => `<option value="${escapeHtml(x)}"></option>`).join('');
-    if($('purposeMasterList')){
-      $('purposeMasterList').innerHTML = list.map(x => {
-        const custom = customPurposeOptions.includes(x);
-        return `<span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border ${custom ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-600'} text-[10px] font-bold">${escapeHtml(x)}${custom ? `<button type="button" class="ml-1 text-slate-400 hover:text-red-500" onclick="deletePurposeMaster('${encodeURIComponent(x)}')" title="削除">×</button>` : ''}</span>`;
-      }).join('');
-    }
-  }
-
-  async function loadPurposes(){
-    if(!connected()) { renderPurposeOptions(); return; }
-    try {
-      const r = await api({action:'get_purposes'});
-      purposeOptions = Array.isArray(r.purposes) && r.purposes.length ? r.purposes : purposeOptions;
-      customPurposeOptions = Array.isArray(r.customPurposes) ? r.customPurposes : [];
-      renderPurposeOptions();
-    } catch(e) {
-      renderPurposeOptions();
-    }
-  }
-
-  async function ensurePurposeRegistered(value){
-    const purpose = String(value || '').trim();
-    if(!purpose || purposeOptions.includes(purpose) || !connected()) return;
-    try {
-      const r = await api({action:'add_purpose', purpose});
-      purposeOptions = r.purposes || purposeOptions.concat([purpose]);
-      customPurposeOptions = r.customPurposes || customPurposeOptions.concat([purpose]);
-      renderPurposeOptions();
-    } catch(e) {}
-  }
-
-  window.deletePurposeMaster = async function(encoded){
-    const purpose = decodeURIComponent(encoded);
-    if(!confirm(`用途「${purpose}」を候補から削除しますか？\n過去の領収書データは削除されません。`)) return;
-    try {
-      const r = await api({action:'delete_purpose', purpose});
-      purposeOptions = r.purposes || purposeOptions.filter(x => x !== purpose);
-      customPurposeOptions = r.customPurposes || customPurposeOptions.filter(x => x !== purpose);
-      renderPurposeOptions();
-      toast('用途候補を削除しました。');
-    } catch(e) { toast(e.message, true); }
-  };
-
-  window.switchTab = function(name){
-    ['scan','history','fixed','settings'].forEach(x => $('tab-'+x).classList.toggle('hidden', x !== name));
-    document.querySelectorAll('.tab-button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-    if(name === 'history') loadHistory();
-    if(name === 'fixed') loadFixedItems();
-    if(name === 'settings' && connected()) { loadDeleted(); loadPurposes(); }
-  };
-  document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-
-  function resetInput(){
-    $('scanStart').classList.remove('hidden');
-    $('manualArea').classList.add('hidden');
-    $('imageArea').classList.add('hidden');
-    $('savedArea').classList.add('hidden');
-    imageData = '';
-    imageMime = '';
-    pendingOcrData = null;
-    $('cameraInput').value = '';
-    $('galleryInput').value = '';
-  }
-  $('manualButton').onclick = () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    $('scanStart').classList.add('hidden');
-    $('manualArea').classList.remove('hidden');
-    $('manualDate').value = todayString();
-    updateManualType();
-  };
-  $('cancelManualButton').onclick = resetInput;
-  $('continueButton').onclick = resetInput;
-  $('cameraButton').onclick = () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    $('cameraInput').click();
-  };
-  $('galleryButton').onclick = () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    $('galleryInput').click();
-  };
-  $('clearImageButton').onclick = resetInput;
-  ['cameraInput','galleryInput'].forEach(id => $(id).addEventListener('change', readImage));
-
-  function dataUrlToParts(dataUrl){
-    const match = String(dataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
-    if(!match) throw new Error('画像データを準備できませんでした。');
-    return { mimeType:match[1], data:match[2], dataUrl };
-  }
-
-  function readFileAsDataUrl(file){
-    return new Promise((resolve,reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('画像ファイルを読み込めませんでした。'));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function loadImageElement(dataUrl){
-    return new Promise((resolve,reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('この画像形式をブラウザで開けません。JPEG・PNG画像をお試しください。'));
-      img.src = dataUrl;
-    });
-  }
-
-  async function prepareImageForOcr(file){
-    if(!file || !String(file.type || '').startsWith('image/')) throw new Error('画像ファイルを選択してください。');
-    if(file.size > 20 * 1024 * 1024) throw new Error('画像が大きすぎます。20MB以下の画像を選択してください。');
-    const original = await readFileAsDataUrl(file);
-    const img = await loadImageElement(original);
-    const maxSide = 1800;
-    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
-    const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
-    const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
-    const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
-    const ctx = canvas.getContext('2d', {alpha:false});
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,width,height);
-    ctx.drawImage(img,0,0,width,height);
-    // 領収書OCRは高解像度を保ちつつJPEGへ圧縮してGASへの送信を軽くする。
-    const compressed = canvas.toDataURL('image/jpeg', 0.88);
-    return dataUrlToParts(compressed);
-  }
-
-  function parseGeminiJson(result){
-    const parts = result && result.result && result.result.candidates && result.result.candidates[0] && result.result.candidates[0].content && result.result.candidates[0].content.parts;
-    const text = Array.isArray(parts) ? parts.map(p => p && p.text ? p.text : '').join('').trim() : '';
-    if(!text) throw new Error('AIの読取結果が空です。画像全体が明るく写るように撮り直してください。');
-    const cleaned = text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
-    try { return JSON.parse(cleaned); }
-    catch(e){
-      const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
-      if(start >= 0 && end > start){
-        try { return JSON.parse(cleaned.slice(start,end+1)); } catch(_) {}
-      }
-      throw new Error('AI結果をJSONとして解析できませんでした。もう一度読み取ってください。');
-    }
-  }
-
-  async function readImage(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    try{
-      const prepared = await prepareImageForOcr(file);
-      imageData = prepared.data;
-      imageMime = prepared.mimeType;
-      $('imagePreview').src = prepared.dataUrl;
-      $('scanStart').classList.add('hidden');
-      $('imageArea').classList.remove('hidden');
-      // 日付はAIが画像から読む。ユーザーが必要な時だけ手動で指定する。
-      $('ocrDate').value = '';
-      toast('画像をOCR用に最適化しました。AI読取を押してください。');
-    }catch(err){ toast(err.message, true); }
-  }
-
-  function fillCategories(select, type, selected=''){
-    const list = type === '収入' ? incomeCategories : expenseCategories;
-    select.innerHTML = list.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
-    if(selected && !list.includes(selected)) select.innerHTML += `<option value="${escapeHtml(selected)}">${escapeHtml(selected)}</option>`;
-    select.value = selected || list[0];
-  }
-  function updateManualType(){
-    const type = $('manualType').value;
-    $('patientWrap').classList.toggle('hidden', type !== '医療費');
-    $('storeLabel').textContent = type === '収入' ? '収入元・入金元' : '店舗・支払先';
-    fillCategories($('manualCategory'), type);
-  }
-  $('manualType').onchange = updateManualType;
-
-  async function saveRecord(data, force=false){
-    if(!data.date || !data.store || !(Number(data.amount) > 0)) throw new Error('日付、支払先（収入元）、1円以上の金額を入力してください。');
-    try { return await api({ action:'upload_text', data, force }); }
-    catch(e) {
-      if(e.result && e.result.duplicate) {
-        e.duplicate = true;
-        e.existingDate = e.result.existingDate || '';
-        e.sameDay = Boolean(e.result.sameDay);
-      }
-      throw e;
-    }
-  }
-
-  async function saveWithDuplicateCheck(data){
-    try { return await saveRecord(data, false); }
-    catch(e) {
-      if(!e.duplicate) throw e;
-      const dateText = e.existingDate || '同じ月';
-      const message = e.sameDay
-        ? `${dateText}に同じ支払先・金額の登録があります。重複して保存しますか？`
-        : `同じ月（${dateText}）に同じ支払先・金額の登録があります。日付が違うので別の買い物なら「OK」で保存できます。保存しますか？`;
-      if(!confirm(message)) return null;
-      return await saveRecord(data, true);
-    }
-  }
-
-  $('saveManualButton').onclick = () => withButton($('saveManualButton'), '保存中...', async () => {
-    const data = {
-      type:$('manualType').value,
-      date:$('manualDate').value,
-      store:$('manualStore').value.trim(),
-      amount:Number($('manualAmount').value),
-      category:$('manualCategory').value,
-      purpose:$('manualPurpose').value.trim(),
-      items:$('manualItems').value.trim() || '-',
-      patientName:$('manualPatient').value.trim()
-    };
-    try {
-      const result = await saveWithDuplicateCheck(data);
-      if(result) { await ensurePurposeRegistered(data.purpose); showSaved(); }
-    } catch(e) { toast(e.message, true); }
-  });
-
-  function showSaved(){
-    $('manualArea').classList.add('hidden');
-    $('imageArea').classList.add('hidden');
-    $('savedArea').classList.remove('hidden');
-    toast('スプレッドシートに保存しました。');
-  }
-
-  $('ocrButton').onclick = () => withButton($('ocrButton'), 'AIが読み取り中...', async () => {
-    if(!imageData) return toast('画像を選択してください。', true);
-    try {
-      const instruction = `日本の領収書・レシート・請求書画像をOCRしてください。指定JSONだけを返してください。店舗名、画像に印字された取引日、最終的な合計/支払金額を最優先し、小計・税額・預り金・お釣りを合計額と誤認しないでください。文字が不鮮明な項目は推測しすぎず空文字にしてください。${$('ocrType').value ? `種類は「${$('ocrType').value}」を優先してください。` : ''}${$('ocrDate').value ? `ユーザー指定日「${$('ocrDate').value}」を日付として使用してください。` : ''}`;
-      const payload = {
-        contents:[{parts:[{text:instruction},{inlineData:{mimeType:imageMime,data:imageData}}]}],
-        generationConfig:{
-          responseMimeType:'application/json',
-          responseSchema:{
-            type:'OBJECT',
-            properties:{
-              type:{type:'STRING'}, date:{type:'STRING'}, store:{type:'STRING'}, amount:{type:'NUMBER'},
-              category:{type:'STRING'}, patientName:{type:'STRING'}, items:{type:'STRING'}
-            },
-            required:['type','date','store','amount','category','items']
-          }
-        }
-      };
-      const result = await api({ action:'call_gemini', payload });
-      const data = parseGeminiJson(result);
-      if($('ocrType').value) data.type = $('ocrType').value;
-      if($('ocrDate').value) data.date = $('ocrDate').value;
-      if($('ocrPatient').value.trim()) data.patientName = $('ocrPatient').value.trim();
-      data.type = ['領収書','医療費','固定支払','収入','書類'].includes(data.type) ? data.type : '領収書';
-      data.amount = Number(data.amount) || 0;
-      data.items = data.items || '-';
-      openOcrConfirm(data);
-    } catch(e) { toast('AI読取エラー: ' + e.message, true); }
-  });
-
-  function openOcrConfirm(data){
-    pendingOcrData = data;
-    $('ocrConfirmType').value = data.type;
-    $('ocrConfirmDate').value = data.date || todayString();
-    $('ocrConfirmStore').value = data.store || '';
-    $('ocrConfirmPatient').value = data.patientName || '';
-    $('ocrConfirmAmount').value = data.amount || '';
-    fillCategories($('ocrConfirmCategory'), data.type, data.category || 'その他');
-    $('ocrConfirmPurpose').value = data.purpose || '';
-    $('ocrConfirmItems').value = data.items === '-' ? '' : (data.items || '');
-    $('ocrConfirmModal').classList.remove('hidden');
-    $('ocrConfirmModal').classList.add('flex');
-  }
-  window.closeOcrConfirm = function(){
-    $('ocrConfirmModal').classList.add('hidden');
-    $('ocrConfirmModal').classList.remove('flex');
-  };
-  $('ocrConfirmType').onchange = () => fillCategories($('ocrConfirmCategory'), $('ocrConfirmType').value);
-  $('saveOcrConfirmButton').onclick = () => withButton($('saveOcrConfirmButton'), '保存中...', async () => {
-    const data = {
-      type:$('ocrConfirmType').value,
-      date:$('ocrConfirmDate').value,
-      store:$('ocrConfirmStore').value.trim(),
-      patientName:$('ocrConfirmPatient').value.trim(),
-      amount:Number($('ocrConfirmAmount').value),
-      category:$('ocrConfirmCategory').value,
-      purpose:$('ocrConfirmPurpose').value.trim(),
-      items:$('ocrConfirmItems').value.trim() || '-'
-    };
-    try {
-      const result = await saveWithDuplicateCheck(data);
-      if(result) {
-        await ensurePurposeRegistered(data.purpose);
-        closeOcrConfirm();
-        showSaved();
-      }
-    } catch(e) { toast(e.message, true); }
-  });
-
-  function fixedItems(){ return fixedItemOptions.slice(); }
-  function renderFixedItems(selected=''){
-    const items = Array.from(new Set((fixedItemOptions || []).map(x => String(x || '').trim()).filter(Boolean)));
-    $('fixedItem').innerHTML = '<option value="">選択してください</option>' + items.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('') + '<option value="__new__">その他（新規）</option>';
-    if(selected && items.includes(selected)) $('fixedItem').value = selected;
-    if($('fixedMasterList')){
-      $('fixedMasterList').innerHTML = items.map(x => {
-        const custom = customFixedItemOptions.includes(x);
-        const encoded = encodeURIComponent(x);
-        return `<div class="flex items-center justify-between gap-2 rounded-xl border ${custom ? 'border-indigo-100 bg-indigo-50/40' : 'border-slate-100 bg-slate-50'} px-3 py-2.5"><span class="text-xs font-bold text-slate-700 min-w-0 truncate">${escapeHtml(x)}</span>${custom ? `<div class="flex gap-1 shrink-0"><button type="button" class="px-2.5 py-1.5 rounded-lg bg-white border border-indigo-100 text-[10px] font-bold text-indigo-600" onclick="editFixedMaster('${encoded}')">修正</button><button type="button" class="px-2.5 py-1.5 rounded-lg bg-white border border-red-100 text-[10px] font-bold text-red-500" onclick="deleteFixedMaster('${encoded}')">削除</button></div>` : '<span class="text-[9px] font-bold text-slate-400">標準</span>'}</div>`;
-      }).join('');
-    }
-  }
-
-  async function migrateLegacyFixedItems(){
-    if(!connected() || store.get('yuzuFixedItemsMigrated391') === '1') return;
-    try{
-      const legacy = JSON.parse(store.get('yuzuFixedItems') || '[]');
-      if(Array.isArray(legacy)){
-        for(const raw of legacy){
-          const item = String(raw || '').trim();
-          if(!item || fixedItemOptions.includes(item)) continue;
-          const r = await api({action:'add_fixed_item', item});
-          fixedItemOptions = r.items || fixedItemOptions.concat([item]);
-          customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
-        }
-      }
-      store.set('yuzuFixedItemsMigrated391', '1');
-    }catch(e){}
-  }
-
-  async function loadFixedItems(){
-    if(!connected()){ renderFixedItems(); return; }
-    try{
-      const ping = await api({action:'ping'});
-      const r = await api({action:'get_fixed_items'});
-      fixedItemOptions = Array.isArray(r.items) && r.items.length ? r.items : fixedItemOptions;
-      customFixedItemOptions = Array.isArray(r.customItems) ? r.customItems : [];
-      await migrateLegacyFixedItems();
-      renderFixedItems($('fixedItem').value);
-      if(ping.version && ping.version !== APP_VERSION) toast(`画面はv${APP_VERSION}、GASはv${ping.version}です。Code.gsを同じ版に更新して再デプロイしてください。`, true);
-      else if(ping.authConfigured === false && !authWarned) { authWarned = true; toast('GAS側で合言葉が未設定です。設定すると第三者の利用を防げます。', true); }
-    }catch(e){
-      renderFixedItems();
-      toast('固定支払マスターを取得できません: ' + e.message, true);
-    }
-  }
-
-  async function ensureFixedItemRegistered(value){
-    const item = String(value || '').trim();
-    if(!item || fixedItemOptions.includes(item) || !connected()) return;
-    const r = await api({action:'add_fixed_item', item});
-    fixedItemOptions = r.items || fixedItemOptions.concat([item]);
-    customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
-    renderFixedItems(item);
-  }
-
-  $('addFixedMasterButton').onclick = () => withButton($('addFixedMasterButton'), '追加中...', async () => {
-    const item = $('fixedMasterNewItem').value.trim();
-    if(!item) return toast('追加する支払項目を入力してください。', true);
-    try{
-      const r = await api({action:'add_fixed_item', item});
-      fixedItemOptions = r.items || fixedItemOptions;
-      customFixedItemOptions = r.customItems || customFixedItemOptions;
-      $('fixedMasterNewItem').value = '';
-      renderFixedItems(item);
-      toast('支払項目を追加しました。次回から自動で表示されます。');
-    }catch(e){ toast(e.message, true); }
-  });
-
-  window.editFixedMaster = async function(encoded){
-    const oldItem = decodeURIComponent(encoded);
-    const next = prompt('支払項目を修正してください。', oldItem);
-    if(next === null) return;
-    const newItem = next.trim();
-    if(!newItem || newItem === oldItem) return;
-    try{
-      const r = await api({action:'update_fixed_item', oldItem, newItem});
-      fixedItemOptions = r.items || fixedItemOptions;
-      customFixedItemOptions = r.customItems || customFixedItemOptions;
-      renderFixedItems(newItem);
-      toast('支払項目を修正しました。');
-    }catch(e){ toast(e.message, true); }
-  };
-
-  window.deleteFixedMaster = async function(encoded){
-    const item = decodeURIComponent(encoded);
-    if(!confirm(`支払項目「${item}」を候補から削除しますか？\n過去に保存した固定支払データは削除されません。`)) return;
-    try{
-      const r = await api({action:'delete_fixed_item', item});
-      fixedItemOptions = r.items || fixedItemOptions.filter(x => x !== item);
-      customFixedItemOptions = r.customItems || customFixedItemOptions.filter(x => x !== item);
-      renderFixedItems();
-      toast('支払項目を候補から削除しました。');
-    }catch(e){ toast(e.message, true); }
-  };
-
-  $('fixedItem').onchange = () => $('newFixedWrap').classList.toggle('hidden', $('fixedItem').value !== '__new__');
-  $('registerNewFixedItemButton').onclick = () => withButton($('registerNewFixedItemButton'), '追加中...', async () => {
-    const item = $('newFixedItem').value.trim();
-    if(!item) return toast('新しい支払項目名を入力してください。', true);
-    try{
-      const r = await api({action:'add_fixed_item', item});
-      fixedItemOptions = r.items || fixedItemOptions.concat([item]);
-      customFixedItemOptions = r.customItems || customFixedItemOptions.concat([item]);
-      renderFixedItems(item);
-      $('newFixedWrap').classList.add('hidden');
-      $('newFixedItem').value = '';
-      toast(`「${item}」を追加しました。次回から候補に残ります。`);
-    }catch(e){ toast('固定支払項目を追加できません: ' + e.message, true); }
-  });
-
-  function clearFixedImage(){
-    fixedImageData = '';
-    fixedImageMime = '';
-    $('fixedImageArea').classList.add('hidden');
-    $('fixedCameraInput').value = '';
-    $('fixedGalleryInput').value = '';
-  }
-  $('fixedCameraButton').onclick = () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    $('fixedCameraInput').click();
-  };
-  $('fixedGalleryButton').onclick = () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    $('fixedGalleryInput').click();
-  };
-  $('clearFixedImageButton').onclick = clearFixedImage;
-  ['fixedCameraInput','fixedGalleryInput'].forEach(id => $(id).addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    try{
-      const prepared = await prepareImageForOcr(file);
-      fixedImageData = prepared.data;
-      fixedImageMime = prepared.mimeType;
-      $('fixedImagePreview').src = prepared.dataUrl;
-      $('fixedImageArea').classList.remove('hidden');
-      toast('固定支払の画像をOCR用に最適化しました。');
-    }catch(err){ toast(err.message, true); }
-  }));
-
-  $('fixedOcrButton').onclick = () => withButton($('fixedOcrButton'), 'AIが読み取り中...', async () => {
-    if(!fixedImageData) return toast('固定支払の画像を選択してください。', true);
-    try{
-      const knownItems = fixedItems().join('、');
-      const instruction = `固定費・請求書・支払通知の画像を読み取り、JSONだけを返してください。候補の支払項目は「${knownItems}」。電力会社・電気料金・電気使用量の請求は必ず「電気代金」に分類してください。電話・携帯・インターネットは「電話・スマホ・ネット代」、自動車保険は「自動車保険」。候補に合わない場合は画像から分かる短い支払項目名を作ってください。日付は請求日より支払期限・口座振替日が明確ならそれを優先し、YYYY-MM-DD。合計請求額をamountにしてください。purposeは通常「生活費」。保存はせず、入力欄に反映するための読取です。`;
-      const payload = {
-        contents:[{parts:[{text:instruction},{inlineData:{mimeType:fixedImageMime,data:fixedImageData}}]}],
-        generationConfig:{
-          responseMimeType:'application/json',
-          responseSchema:{
-            type:'OBJECT',
-            properties:{
-              fixedItem:{type:'STRING'}, date:{type:'STRING'}, amount:{type:'NUMBER'}, purpose:{type:'STRING'}, details:{type:'STRING'}
-            },
-            required:['fixedItem','date','amount']
-          }
-        }
-      };
-      const result = await api({action:'call_gemini', payload});
-      const data = parseGeminiJson(result);
-      const item = String(data.fixedItem || '').trim();
-      if(item && fixedItemOptions.includes(item)){
-        renderFixedItems(item);
-        $('newFixedWrap').classList.add('hidden');
-      }else if(item){
-        $('fixedItem').value = '__new__';
-        $('newFixedWrap').classList.remove('hidden');
-        $('newFixedItem').value = item;
-      }
-      $('fixedAmount').value = Number(data.amount) || '';
-      $('fixedDate').value = /^\d{4}-\d{2}-\d{2}$/.test(String(data.date || '')) ? data.date : todayString();
-      $('fixedPurpose').value = String(data.purpose || '生活費').trim() || '生活費';
-      toast('固定支払を読み取りました。内容を確認してから保存してください。');
-    }catch(e){ toast('固定支払のAI読取エラー: ' + e.message, true); }
-  });
-
-  $('saveFixedButton').onclick = () => withButton($('saveFixedButton'), '保存中...', async () => {
-    let item = $('fixedItem').value;
-    if(item === '__new__') item = $('newFixedItem').value.trim();
-    const data = { type:'固定支払', date:$('fixedDate').value, store:item, amount:Number($('fixedAmount').value), category:'固定費', items:item, patientName:'', purpose:$('fixedPurpose').value.trim() || '生活費' };
-    try {
-      if($('fixedItem').value === '__new__' && item) await ensureFixedItemRegistered(item);
-      const result = await saveWithDuplicateCheck(data);
-      if(!result) return;
-      await ensurePurposeRegistered(data.purpose);
-      $('fixedAmount').value = '';
-      $('newFixedItem').value = '';
-      clearFixedImage();
-      toast('固定支払を保存しました。');
-    } catch(e) { toast(e.message, true); }
-  });
-
-  async function loadHistory(){
-    $('historyLoading').classList.remove('hidden');
-    $('historyList').innerHTML = '';
-    try {
-      const r = await api({ action:'getHistory' });
-      allHistory = (r.data || []).map(normalizeHistoryItemClient);
-      // 金額・カテゴリは全履歴から画面側でも再計算し、古い集計結果に依存しない。
-      analytics = {
-        periods:buildPeriodsClient(allHistory),
-        trends:buildTrendsClient(allHistory),
-        monthlySummaries:buildMonthlySummariesClient(allHistory)
-      };
-      const availableMonths = analytics.monthlySummaries.map(x => x.month);
-      if(!selectedMonth || (!availableMonths.includes(selectedMonth) && availableMonths.length)) selectedMonth = availableMonths[0];
-      $('monthlyHistoryMonth').value = selectedMonth;
-      renderSummary();
-      renderVisualAnalytics();
-      renderMonthlySection();
-      renderHistory();
-    } catch(e) { toast(e.message, true); }
-    finally { $('historyLoading').classList.add('hidden'); }
-  }
-
-  function renderSummary(){
-    const s = analytics.periods[currentPeriod] || emptySummary();
-    const title = {day:'今日',week:'今週',month:'今月'}[currentPeriod];
-    $('summaryTitle').textContent = title + 'の収支';
-    $('summaryIncome').textContent = money(s.income);
-    $('summaryExpense').textContent = money(s.expense);
-    $('summaryBalance').textContent = money(s.balance);
-    $('summaryGeneral').textContent = money(s.general);
-    $('summaryMedical').textContent = money(s.medical);
-    $('summaryFixed').textContent = money(s.fixed);
-    $('summaryBalance').className = 'text-sm font-black mt-1 ' + (s.balance < 0 ? 'text-rose-200' : 'text-emerald-200');
-
-    const trend = analytics.trends[currentPeriod === 'day' ? 'daily' : currentPeriod === 'week' ? 'weekly' : 'monthly'] || [];
-    $('trendList').innerHTML = trend.slice(-8).map(x => `<div class="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] items-center"><span class="font-bold text-slate-500">${escapeHtml(x.label)}</span><span class="text-emerald-600">入 ${money(x.income)}</span><span class="text-rose-600">出 ${money(x.expense)}</span></div>`).join('') || '<p class="text-xs text-slate-400 text-center py-3">データがありません</p>';
-
-    const cats = Object.entries(s.categories || {}).sort((a,b) => b[1] - a[1]);
-    $('categoryList').innerHTML = cats.map(([n,v]) => {
-      const count = Number((s.categoryCounts || {})[n] || 0);
-      return `<div><div class="flex justify-between text-[11px] mb-1"><b>${escapeHtml(n)} <span class="font-normal text-[9px] text-slate-400">${count}件</span></b><span>${money(v)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${s.expense ? Math.max(2, v / s.expense * 100) : 0}%"></div></div></div>`;
-    }).join('') || '<p class="text-xs text-slate-400 text-center py-3">支出データがありません</p>';
-  }
-
-
-
-  function recordsForLastDays(days){
-    const today = new Date();
-    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - Number(days) + 1);
-    return allHistory.filter(item => {
-      const d = parseYmdClient(item.date);
-      return d && d >= start && d < end;
-    });
-  }
-
-  function visualStats(days){
-    const records = recordsForLastDays(days);
-    const categories = {}, purposes = {}, stores = {};
-    let income = 0, expense = 0;
-    records.forEach(item => {
-      const amount = Number(item.amount || 0);
-      const isIncome = item.type === '収入' || item.sourceSheet === '収入用';
-      if(isIncome) { income += amount; return; }
-      expense += amount;
-      const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
-      const purpose = String(item.purpose || '未設定').trim() || '未設定';
-      const store = String(item.store || '名称なし').trim() || '名称なし';
-      categories[category] = (categories[category] || 0) + amount;
-      purposes[purpose] = (purposes[purpose] || 0) + amount;
-      stores[store] = (stores[store] || 0) + amount;
-    });
-    return {records, income, expense, balance:income-expense, categories, purposes, stores};
-  }
-
-  function topEntries(obj, limit=8){
-    return Object.entries(obj || {}).sort((a,b) => b[1] - a[1]).slice(0, limit);
-  }
-
-  function chartPalette(count){
-    const colors = ['#4f46e5','#0ea5e9','#14b8a6','#22c55e','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#8b5cf6','#64748b','#06b6d4'];
-    return Array.from({length:count}, (_,i) => colors[i % colors.length]);
-  }
-
-  function destroyChart(name){
-    if(chartInstances[name]) {
-      chartInstances[name].destroy();
-      delete chartInstances[name];
-    }
-  }
-
-  function buildCashflowSeries(days){
-    const today = new Date();
-    const useWeeks = Number(days) > 60;
-    const buckets = new Map();
-    const records = recordsForLastDays(days);
-
-    if(useWeeks){
-      for(let i=0;i<Math.ceil(days/7);i++){
-        const end = new Date(today.getFullYear(),today.getMonth(),today.getDate()-i*7+1);
-        const start = new Date(end.getFullYear(),end.getMonth(),end.getDate()-7);
-        const key = `${start.getMonth()+1}/${start.getDate()}`;
-        buckets.set(key,{label:key,start,end,income:0,expense:0});
-      }
-    } else {
-      for(let i=days-1;i>=0;i--){
-        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate()-i);
-        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        buckets.set(key,{label:`${d.getMonth()+1}/${d.getDate()}`,date:key,income:0,expense:0});
-      }
-    }
-
-    records.forEach(item => {
-      const d = parseYmdClient(item.date);
-      if(!d) return;
-      let bucket = null;
-      if(useWeeks){
-        for(const b of buckets.values()){
-          if(d >= b.start && d < b.end){ bucket = b; break; }
-        }
-      } else {
-        bucket = buckets.get(item.date);
-      }
-      if(!bucket) return;
-      const amount = Number(item.amount || 0);
-      if(item.type === '収入' || item.sourceSheet === '収入用') bucket.income += amount;
-      else bucket.expense += amount;
-    });
-
-    const arr = Array.from(buckets.values());
-    if(useWeeks) arr.sort((a,b) => a.start - b.start);
-    return arr;
-  }
-
-  function renderVisualAnalytics(){
-    if(typeof Chart === 'undefined') return;
-    const days = Number(visualPeriodDays || 30);
-    const stats = visualStats(days);
-    $('visualRangeLabel').textContent = days === 30 ? '1か月' : `${days}日`;
-    const topCat = topEntries(stats.categories,1)[0];
-    const topPurpose = topEntries(stats.purposes,1)[0];
-    $('visualKpis').innerHTML = `
-      <div class="rounded-xl bg-rose-50 border border-rose-100 p-3"><p class="text-[9px] text-rose-500 font-bold">支出合計</p><p class="text-sm font-black text-rose-700 mt-1">${money(stats.expense)}</p><p class="text-[9px] text-rose-400 mt-1">1日平均 ${money(days ? Math.round(stats.expense/days) : 0)}</p></div>
-      <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3"><p class="text-[9px] text-emerald-600 font-bold">収入合計</p><p class="text-sm font-black text-emerald-700 mt-1">${money(stats.income)}</p><p class="text-[9px] text-emerald-500 mt-1">差引 ${money(stats.balance)}</p></div>
-      <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-3"><p class="text-[9px] text-indigo-500 font-bold">最多カテゴリ</p><p class="text-xs font-black text-indigo-800 mt-1 truncate">${escapeHtml(topCat?.[0] || 'データなし')}</p><p class="text-[9px] text-indigo-500 mt-1">${money(topCat?.[1] || 0)}</p></div>
-      <div class="rounded-xl bg-sky-50 border border-sky-100 p-3"><p class="text-[9px] text-sky-600 font-bold">最多用途</p><p class="text-xs font-black text-sky-800 mt-1 truncate">${escapeHtml(topPurpose?.[0] || '未設定')}</p><p class="text-[9px] text-sky-500 mt-1">${money(topPurpose?.[1] || 0)}</p></div>`;
-
-    const series = buildCashflowSeries(days);
-    destroyChart('line');
-    chartInstances.line = new Chart($('cashflowLineChart'), {
-      type:'line',
-      data:{
-        labels:series.map(x => x.label),
-        datasets:[
-          {label:'収入',data:series.map(x => x.income),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.08)',tension:.25,pointRadius:days>60?1:2},
-          {label:'支出',data:series.map(x => x.expense),borderColor:'#f43f5e',backgroundColor:'rgba(244,63,94,.08)',tension:.25,pointRadius:days>60?1:2}
-        ]
-      },
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{font:{size:8},maxTicksLimit:days>60?8:10}},y:{beginAtZero:true,ticks:{font:{size:8},callback:v=>'¥'+Number(v).toLocaleString()}}}}
-    });
-
-    const cats = topEntries(stats.categories,8);
-    destroyChart('pie');
-    chartInstances.pie = new Chart($('categoryPieChart'), {
-      type:'pie',
-      data:{labels:cats.map(x=>x[0]),datasets:[{data:cats.map(x=>x[1]),backgroundColor:chartPalette(cats.length),borderWidth:1,borderColor:'#fff'}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:9}}}}}
-    });
-
-    const purposes = topEntries(stats.purposes,8);
-    destroyChart('purpose');
-    chartInstances.purpose = new Chart($('purposeBarChart'), {
-      type:'bar',
-      data:{labels:purposes.map(x=>x[0]),datasets:[{label:'支出',data:purposes.map(x=>x[1]),backgroundColor:chartPalette(purposes.length)}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:8},callback:v=>'¥'+Number(v).toLocaleString()}},y:{ticks:{font:{size:9}}}}}
-    });
-
-    const stores = topEntries(stats.stores,5);
-    $('topStoreList').innerHTML = stores.map(([name,value],i) => `<div><div class="flex justify-between gap-2 text-[10px]"><span class="font-bold text-slate-600 truncate">${i+1}. ${escapeHtml(name)}</span><span class="font-black text-slate-700 shrink-0">${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full bg-indigo-500 rounded-full" style="width:${stats.expense ? Math.max(3,value/stats.expense*100) : 0}%"></div></div></div>`).join('') || '<p class="text-[10px] text-slate-400 text-center py-3">支出データがありません</p>';
-  }
-
-  document.querySelectorAll('.visual-period-button').forEach(btn => btn.onclick = () => {
-    document.querySelectorAll('.visual-period-button').forEach(x => {
-      x.classList.remove('bg-indigo-600','text-white','border-indigo-600','active');
-      x.classList.add('bg-white','text-slate-600','border-slate-200');
-    });
-    btn.classList.add('bg-indigo-600','text-white','border-indigo-600','active');
-    btn.classList.remove('bg-white','text-slate-600','border-slate-200');
-    visualPeriodDays = Number(btn.dataset.days || 30);
-    renderVisualAnalytics();
-  });
-
-  function previousPeriodStats(days){
-    const today = new Date();
-    const currentStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - Number(days) + 1);
-    const previousEnd = currentStart;
-    const previousStart = new Date(currentStart.getFullYear(), currentStart.getMonth(), currentStart.getDate() - Number(days));
-    const records = allHistory.filter(item => {
-      const d = parseYmdClient(item.date);
-      return d && d >= previousStart && d < previousEnd;
-    });
-    const categories = {}, purposes = {}, stores = {};
-    let income = 0, expense = 0;
-    records.forEach(item => {
-      const amount = Number(item.amount || 0);
-      const isIncome = item.type === '収入' || item.sourceSheet === '収入用';
-      if(isIncome) { income += amount; return; }
-      expense += amount;
-      const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
-      const purpose = String(item.purpose || '未設定').trim() || '未設定';
-      const store = String(item.store || '名称なし').trim() || '名称なし';
-      categories[category] = (categories[category] || 0) + amount;
-      purposes[purpose] = (purposes[purpose] || 0) + amount;
-      stores[store] = (stores[store] || 0) + amount;
-    });
-    return {records,income,expense,balance:income-expense,categories,purposes,stores};
-  }
-
-  function pctChange(current, previous){
-    const c = Number(current || 0), p = Number(previous || 0);
-    if(!p) return c ? null : 0;
-    return Math.round((c - p) / p * 1000) / 10;
-  }
-
-  function buildMoneyConsultantPayload(days){
-    const stats = visualStats(days);
-    const previous = previousPeriodStats(days);
-    const topCats = topEntries(stats.categories,10);
-    const topPurposes = topEntries(stats.purposes,10);
-    const topStores = topEntries(stats.stores,10);
-    const expenseRecords = stats.records.filter(x => !(x.type === '収入' || x.sourceSheet === '収入用'));
-    const fixedExpense = expenseRecords.filter(x => x.sourceSheet === '固定支払' || x.type === '固定支払').reduce((sum,x) => sum + Number(x.amount || 0), 0);
-    const latest = expenseRecords.slice(0,40).map(x => ({date:x.date,store:x.store,amount:x.amount,category:x.category,purpose:x.purpose || '未設定',items:x.items}));
-    return {
-      days,
-      income:stats.income,
-      expense:stats.expense,
-      balance:stats.balance,
-      dailyAverage:days?Math.round(stats.expense/days):0,
-      expenseCount:expenseRecords.length,
-      fixedExpense,
-      fixedExpenseRatio:stats.expense ? Math.round(fixedExpense / stats.expense * 1000) / 10 : 0,
-      previousPeriod:{
-        income:previous.income,
-        expense:previous.expense,
-        balance:previous.balance,
-        incomeChangePct:pctChange(stats.income, previous.income),
-        expenseChangePct:pctChange(stats.expense, previous.expense)
-      },
-      topCategories:topCats,
-      topPurposes,
-      topStores,
-      latestExpenses:latest
-    };
-  }
-
-  function renderMoneyConsultant(result, days){
-    const box = $('moneyConsultantResult');
-    const redirectYen = Math.max(0, Number(result?.estimatedRedirectYen || 0));
-    box.classList.remove('hidden');
-    const bullets = (arr, icon='•') => Array.isArray(arr) && arr.length ? `<ul class="space-y-1.5">${arr.map(x => `<li class="flex gap-2"><span class="text-emerald-300">${icon}</span><span>${escapeHtml(x)}</span></li>`).join('')}</ul>` : '<p class="text-indigo-200">該当なし</p>';
-    box.innerHTML = `
-      <div class="flex justify-between gap-3 items-start mb-3"><div><p class="text-[9px] text-indigo-200">${days}日間の診断</p><p class="text-sm font-black mt-1">${escapeHtml(result.headline || '支出傾向を分析しました')}</p></div><span class="text-[9px] px-2 py-1 rounded-full bg-emerald-400/20 text-emerald-200 whitespace-nowrap">Gemini 3.6 Flash</span></div>
-      <div class="space-y-4">
-        <div><p class="font-black text-emerald-200 mb-1.5">良い使い方</p>${bullets(result.goodPoints,'✓')}</div>
-        <div><p class="font-black text-amber-200 mb-1.5">注意したい支出</p>${bullets(result.watchPoints,'!')}</div>
-        <div><p class="font-black text-rose-200 mb-1.5">減らす・やめる候補</p>${bullets(result.stopOrReduce,'−')}</div>
-        <div><p class="font-black text-sky-200 mb-1.5">別用途へ回す案</p>${bullets(result.redirectIdeas,'→')}</div>
-        <div><p class="font-black text-white mb-1.5">次にやること</p>${bullets(result.nextActions,'1')}</div>
-      </div>
-      ${redirectYen ? `<div class="mt-4 rounded-xl bg-white/10 p-3"><p class="text-[9px] text-indigo-200">見直し候補額の目安</p><p class="text-lg font-black text-emerald-300 mt-1">${money(redirectYen)}</p><p class="text-[9px] text-indigo-200 mt-1">AIの目安です。生活必需・医療・家族事情を優先してください。</p></div>` : ''}`;
-  }
-
-  $('runMoneyConsultantButton').onclick = () => withButton($('runMoneyConsultantButton'), '分析中...', async () => {
-    if(!connected()) return toast('先に設定画面でGAS URLを登録してください。', true);
-    if(!allHistory.length) await loadHistory();
-    const days = Number($('aiMoneyPeriod').value || 30);
-    const summary = buildMoneyConsultantPayload(days);
-    if(!summary.expense && !summary.income) return toast('選択期間に分析できる収支データがありません。', true);
-    const instruction = `あなたは家計改善を支援する実務的なマネーコンサルタントです。以下は${days}日間の実データ集計です。
-金額だけで乱暴に節約を勧めず、医療・生活必需・家族のための支出は必要性を尊重してください。
-投資商品や借入商品を推奨せず、家計・支出配分の改善に限定してください。
-「何に使いすぎているか」「維持してよい支出」「減らす/やめる候補」「減らした金額を何に回すか」「明日からできる具体策」を、データ根拠を示して日本語で具体的に分析してください。
-直前の同じ日数の期間との比較も使い、同じ店舗・カテゴリ・用途の繰り返し、小額頻回支出、固定費比率、収入とのバランスにも注目してください。前期間データが0円で増減率を計算できない場合は、無理に割合を作らず金額差で説明してください。
-JSONのみを返してください。`;
-    const payload = {
-      contents:[{parts:[{text:instruction + '\\n\\n分析データ:\\n' + JSON.stringify(summary)}]}],
-      generationConfig:{
-        responseMimeType:'application/json',
-        responseSchema:{
-          type:'OBJECT',
-          properties:{
-            headline:{type:'STRING'},
-            goodPoints:{type:'ARRAY',items:{type:'STRING'}},
-            watchPoints:{type:'ARRAY',items:{type:'STRING'}},
-            stopOrReduce:{type:'ARRAY',items:{type:'STRING'}},
-            redirectIdeas:{type:'ARRAY',items:{type:'STRING'}},
-            nextActions:{type:'ARRAY',items:{type:'STRING'}},
-            estimatedRedirectYen:{type:'NUMBER'}
-          },
-          required:['headline','goodPoints','watchPoints','stopOrReduce','redirectIdeas','nextActions','estimatedRedirectYen']
-        }
-      }
-    };
-    try {
-      const r = await api({action:'call_gemini', payload});
-      const text = r.result?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if(!text) throw new Error('AI診断結果が空です。');
-      renderMoneyConsultant(JSON.parse(text), days);
-    } catch(e) { toast('AI診断エラー: ' + e.message, true); }
-  });
-
-  function buildMonthlySummariesClient(records){
-    const groups = {};
-    records.forEach(item => {
-      const month = String(item.date || '').slice(0, 7);
-      if(!/^\d{4}-\d{2}$/.test(month)) return;
-      if(!groups[month]) groups[month] = { month, label:month.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0, incomeCount:0 };
-      const s = groups[month];
-      const amount = Number(item.amount || 0);
-      s.count++;
-      const income = item.type === '収入' || item.sourceSheet === '収入用';
-      if(income){ s.income += amount; s.incomeCount++; }
-      else {
-        s.expense += amount; s.total += amount; s.expenseCount++;
-        if(item.sourceSheet === '一般用') s.general += amount;
-        if(item.sourceSheet === '医療費用') s.medical += amount;
-        if(item.sourceSheet === '固定支払') s.fixed += amount;
-        const category = normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type);
-        s.categories[category] = (s.categories[category] || 0) + amount;
-        s.categoryCounts[category] = (s.categoryCounts[category] || 0) + 1;
-        const purpose = String(item.purpose || '未設定').trim() || '未設定';
-        s.purposes[purpose] = (s.purposes[purpose] || 0) + amount;
-        s.purposeCounts[purpose] = (s.purposeCounts[purpose] || 0) + 1;
-      }
-      s.balance = s.income - s.expense;
-    });
-    const current = todayString().slice(0,7);
-    if(!groups[current]) groups[current] = { month:current, label:current.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0, incomeCount:0 };
-    return Object.values(groups).sort((a,b) => b.month.localeCompare(a.month));
-  }
-
-  function shiftMonth(month, amount){
-    const match = String(month || '').match(/^(\d{4})-(\d{2})$/);
-    const base = match ? new Date(Number(match[1]), Number(match[2]) - 1, 1) : new Date();
-    base.setMonth(base.getMonth() + amount);
-    return `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}`;
-  }
-
-  function renderMonthlySection(){
-    if(!$('monthlyHistoryMonth')) return;
-    $('monthlyHistoryMonth').value = selectedMonth;
-    const summary = analytics.monthlySummaries.find(x => x.month === selectedMonth) || { month:selectedMonth, label:selectedMonth.replace(/^(\d{4})-(\d{2})$/, (_,y,m) => `${y}年${Number(m)}月`), ...emptySummary(), expenseCount:0 };
-    $('monthlySummaryTitle').textContent = `${summary.label || selectedMonth}の集計`;
-    $('monthlyIncome').textContent = money(summary.income);
-    $('monthlyExpense').textContent = money(summary.expense);
-    $('monthlyBalance').textContent = money(summary.balance);
-    $('monthlyBalance').className = 'text-xs font-black mt-1 ' + (Number(summary.balance) < 0 ? 'text-rose-700' : 'text-indigo-700');
-    $('monthlyGeneral').textContent = money(summary.general);
-    $('monthlyMedical').textContent = money(summary.medical);
-    $('monthlyFixed').textContent = money(summary.fixed);
-
-    const categories = Object.entries(summary.categories || {}).sort((a,b) => b[1] - a[1]);
-    $('monthlyCategoryList').innerHTML = categories.map(([name,value]) => {
-      const count = Number((summary.categoryCounts || {})[name] || 0);
-      return `<div><div class="flex justify-between text-[10px] mb-1"><b class="text-slate-600">${escapeHtml(name)} <span class="font-normal text-[8px] text-slate-400">${count}件</span></b><span>${money(value)}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${summary.expense ? Math.max(2, value / summary.expense * 100) : 0}%"></div></div></div>`;
-    }).join('') || '<p class="text-[11px] text-slate-400 text-center py-2">この月の支出はありません</p>';
-
-    const expenses = allHistory.filter(item => String(item.date || '').slice(0,7) === selectedMonth && !(item.type === '収入' || item.sourceSheet === '収入用'));
-    $('monthlyExpenseCount').textContent = `${expenses.length}件`;
-    const shown = expenses.slice(0, monthlyDisplayCount);
-    $('monthlyExpenseList').innerHTML = shown.map(item => `<div class="rounded-xl border border-slate-100 bg-slate-50 p-3"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[9px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p>${item.purpose ? `<p class="text-[8px] text-indigo-500 mt-0.5">用途：${escapeHtml(item.purpose)}</p>` : ''}</div><div class="text-right shrink-0"><p class="text-[11px] font-black text-rose-600">-${money(item.amount)}</p><span class="text-[8px] text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div></div>`).join('') || '<p class="text-[11px] text-slate-400 text-center py-4">この月の支出履歴はありません</p>';
-    $('monthlyMoreButton').classList.toggle('hidden', expenses.length <= monthlyDisplayCount);
-    lucide.createIcons();
-  }
-
-  $('monthlyHistoryMonth').addEventListener('change', () => {
-    selectedMonth = $('monthlyHistoryMonth').value || todayString().slice(0,7);
-    monthlyDisplayCount = 10;
-    renderMonthlySection();
-  });
-  $('previousMonthButton').onclick = () => {
-    selectedMonth = shiftMonth(selectedMonth, -1);
-    monthlyDisplayCount = 10;
-    renderMonthlySection();
-  };
-  $('nextMonthButton').onclick = () => {
-    selectedMonth = shiftMonth(selectedMonth, 1);
-    monthlyDisplayCount = 10;
-    renderMonthlySection();
-  };
-  $('monthlyMoreButton').onclick = () => {
-    monthlyDisplayCount += 10;
-    renderMonthlySection();
-  };
-
-  function filteredHistory(){
-    const keyword = $('historySearch').value.trim().toLowerCase();
-    const from = $('historyFrom').value;
-    const to = $('historyTo').value;
-    return allHistory.filter(item => {
-      if(currentFilter !== 'all' && item.sourceSheet !== currentFilter) return false;
-      if(from && item.date < from) return false;
-      if(to && item.date > to) return false;
-      if(keyword){
-        const haystack = [item.store,item.items,item.category,item.purpose,item.patientName,item.type].join(' ').toLowerCase();
-        if(!haystack.includes(keyword)) return false;
-      }
-      return true;
-    });
-  }
-
-  function renderHistory(){
-    const list = filteredHistory();
-    const shown = list.slice(0, displayCount);
-    $('historyCount').textContent = `${list.length}件`;
-    $('historyList').innerHTML = shown.map(item => {
-      const income = item.type === '収入' || item.sourceSheet === '収入用';
-      const encoded = encodeURIComponent(item.recordId || '');
-      return `<div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm"><div class="flex justify-between gap-3"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p><p class="font-bold text-sm truncate">${escapeHtml(item.store || '名称なし')}</p><p class="text-[11px] text-slate-400 truncate">${escapeHtml(item.items || '')}</p>${item.purpose ? `<p class="text-[9px] text-indigo-500 mt-1">用途：${escapeHtml(item.purpose)}</p>` : ''}</div><div class="text-right shrink-0"><p class="font-black ${income ? 'text-emerald-600' : 'text-slate-900'}">${income ? '+' : '-'}${money(item.amount)}</p><span class="text-[9px] bg-slate-50 border rounded-full px-2 py-0.5 text-slate-500">${escapeHtml(normalizeCategoryClient(item.category, item.store, item.sourceSheet, item.type))}</span></div></div><div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-50"><button class="text-[10px] font-bold bg-slate-50 rounded-lg px-3 py-1.5" onclick="openEdit('${encoded}')">修正</button><button class="text-[10px] font-bold text-red-500 bg-red-50 rounded-lg px-3 py-1.5" onclick="deleteRecord('${encoded}')">削除</button></div></div>`;
-    }).join('') || '<div class="text-center text-xs text-slate-400 py-12">条件に該当する履歴がありません</div>';
-    $('moreButton').classList.toggle('hidden', list.length <= displayCount);
-    lucide.createIcons();
-  }
-
-  document.querySelectorAll('.period-button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.period-button').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    currentPeriod = b.dataset.period;
-    renderSummary();
-  });
-  document.querySelectorAll('.filter-button').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.filter-button').forEach(x => {
-      x.classList.remove('active','bg-slate-900','text-white');
-      x.classList.add('bg-white','text-slate-600');
-    });
-    b.classList.add('active','bg-slate-900','text-white');
-    currentFilter = b.dataset.filter;
-    displayCount = 12;
-    renderHistory();
-  });
-  ['historySearch','historyFrom','historyTo'].forEach(id => $(id).addEventListener('input', () => { displayCount = 12; renderHistory(); }));
-  $('clearHistoryFilter').onclick = () => {
-    $('historySearch').value = '';
-    $('historyFrom').value = '';
-    $('historyTo').value = '';
-    displayCount = 12;
-    renderHistory();
-  };
-  $('moreButton').onclick = () => { displayCount += 12; renderHistory(); };
-  $('refreshHistoryButton').onclick = loadHistory;
-
-  function findItemById(encoded){
-    const id = decodeURIComponent(encoded);
-    return allHistory.find(x => (x.recordId || '') === id);
-  }
-  window.openEdit = function(encoded){
-    const item = findItemById(encoded);
-    if(!item) return toast('対象データが見つかりません。履歴を更新してください。', true);
-    $('editRecordId').value = item.recordId || '';
-    $('editSheet').value = item.sourceSheet || '';
-    $('editType').value = item.type;
-    $('editDate').value = item.date;
-    $('editStore').value = item.store;
-    $('editPatient').value = item.patientName || '';
-    $('editAmount').value = item.amount;
-    $('editCategory').value = item.category;
-    $('editPurpose').value = item.purpose || '';
-    $('editItems').value = item.items === '-' ? '' : item.items;
-    $('editModal').classList.remove('hidden');
-    $('editModal').classList.add('flex');
-  };
-  window.closeEdit = function(){ $('editModal').classList.add('hidden'); $('editModal').classList.remove('flex'); };
-  $('saveEditButton').onclick = () => withButton($('saveEditButton'), '保存中...', async () => {
-    const data = {
-      type:$('editType').value,
-      date:$('editDate').value,
-      store:$('editStore').value.trim(),
-      patientName:$('editPatient').value.trim(),
-      amount:Number($('editAmount').value),
-      category:$('editCategory').value.trim(),
-      purpose:$('editPurpose').value.trim(),
-      items:$('editItems').value.trim() || '-'
-    };
-    try {
-      await api({ action:'update_row', sourceSheet:$('editSheet').value, recordId:$('editRecordId').value, data });
-      await ensurePurposeRegistered(data.purpose);
-      closeEdit();
-      toast('修正しました。');
-      loadHistory();
-    } catch(e) { toast(e.message, true); }
-  });
-
-  window.deleteRecord = async function(encoded){
-    const item = findItemById(encoded);
-    if(!item) return;
-    if(!confirm(`${item.store} ${money(item.amount)} を削除しますか？\n削除後も設定画面から復元できます。`)) return;
-    try {
-      await api({ action:'delete_row', sourceSheet:item.sourceSheet, recordId:item.recordId, rowIndex:item.rowIndex });
-      toast('削除済みに移動しました。');
-      loadHistory();
-    } catch(e) { toast(e.message, true); }
-  };
-
-  $('saveSettingsButton').onclick = () => withButton($('saveSettingsButton'), '接続確認中...', async () => {
-    const previousUrl = store.get('yuzuGasUrl') || '';
-    const previousToken = store.get('yuzuToken') || '';
-    try {
-      const url = normalizeGasUrl($('gasUrl').value);
-      const token = $('gasToken').value.trim();
-      const r = await api({ action:'ping' }, url, token);
-      if(r.authConfigured && !r.authOk) throw new Error('合言葉が違います。GASのスクリプトプロパティ YUZU_ACCESS_TOKEN と同じ値を入力してください。');
-      store.set('yuzuGasUrl', url);
-      store.set('yuzuToken', token);
-      $('gasUrl').value = url;
-      updateMode();
-      if(r.authConfigured) toast(`接続成功（${r.version || 'GAS'}）。URLと合言葉を保存しました。`);
-      else toast(`接続成功（${r.version || 'GAS'}）。ただしGAS側で合言葉が未設定です。第三者に使われないよう設定してください。`, true);
-      loadDeleted();
-      loadPurposes();
-      loadFixedItems();
-    } catch(e) {
-      if(previousUrl) store.set('yuzuGasUrl', previousUrl);
-      else store.remove('yuzuGasUrl');
-      if(previousToken) store.set('yuzuToken', previousToken);
-      else store.remove('yuzuToken');
-      updateMode();
-      toast('接続確認に失敗しました。以前の設定は変更していません。' + e.message, true);
-    }
-  });
-
-
-  $('addPurposeMasterButton').onclick = () => withButton($('addPurposeMasterButton'), '追加中...', async () => {
-    const purpose = $('newPurposeMaster').value.trim();
-    if(!purpose) return toast('追加する用途を入力してください。', true);
-    try {
-      const r = await api({action:'add_purpose', purpose});
-      purposeOptions = r.purposes || purposeOptions;
-      customPurposeOptions = r.customPurposes || customPurposeOptions;
-      $('newPurposeMaster').value = '';
-      renderPurposeOptions();
-      toast('用途候補を追加しました。');
-    } catch(e) { toast(e.message, true); }
-  });
-
-  $('backupButton').onclick = () => withButton($('backupButton'), 'バックアップ中...', async () => {
-    try {
-      const r = await api({ action:'backup_now' });
-      toast(`バックアップを作成しました：${r.backupName}`);
-    } catch(e) { toast(e.message, true); }
-  });
-
-  $('repairButton').onclick = () => withButton($('repairButton'), '点検・修復中...', async () => {
-    if(!confirm('見出し・書式・管理IDを安全に点検します。実行前に自動バックアップされます。続けますか？')) return;
-    try {
-      const r = await api({ action:'repair_layout' });
-      $('maintenanceResult').innerHTML = `バックアップ：${escapeHtml(r.backupName)}<br>${(r.reports || []).map(escapeHtml).join('<br>')}`;
-      $('maintenanceResult').classList.remove('hidden');
-      toast(`${r.repairedRows || 0}行を点検・修復しました。`);
-    } catch(e) { toast(e.message, true); }
-  });
-
-  async function loadDeleted(){
-    if(!connected()) return;
-    try {
-      const r = await api({ action:'get_deleted' });
-      const list = r.data || [];
-      $('deletedList').innerHTML = list.slice(0, 20).map(item => {
-        const encoded = encodeURIComponent(item.recordId || '');
-        return `<div class="border border-slate-100 rounded-xl p-3 bg-slate-50"><div class="flex justify-between gap-2"><div class="min-w-0"><p class="text-[10px] text-slate-400">${escapeHtml(item.deletedAt || '')}</p><p class="text-xs font-bold truncate">${escapeHtml(item.store || '')}</p><p class="text-[10px] text-slate-400">${escapeHtml(item.date || '')}・${escapeHtml(item.sourceSheet || '')}</p></div><div class="text-right"><p class="text-xs font-black">${money(item.amount)}</p><button class="mt-2 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700" onclick="restoreDeleted('${encoded}')">復元</button></div></div></div>`;
-      }).join('') || '<p class="text-xs text-slate-400 text-center py-4">削除済みデータはありません</p>';
-    } catch(e) { $('deletedList').innerHTML = `<p class="text-xs text-red-500">${escapeHtml(e.message)}</p>`; }
-  }
-  $('refreshDeletedButton').onclick = loadDeleted;
-  window.restoreDeleted = async function(encoded){
-    const recordId = decodeURIComponent(encoded);
-    if(!confirm('このデータを元のシートへ復元しますか？')) return;
-    try {
-      await api({ action:'restore_deleted', recordId });
-      toast('データを復元しました。');
-      loadDeleted();
-    } catch(e) { toast(e.message, true); }
-  };
-
-  $('importFileButton').onclick = () => withButton($('importFileButton'), '取込中...', async () => {
-    try {
-      const file = $('importFile').files[0];
-      if(!file) throw new Error('CSVまたはExcelファイルを選択してください。');
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type:'array', cellDates:true });
-      let rows = [];
-      wb.SheetNames.forEach(name => {
-        const arr = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, defval:'', raw:false });
-        rows.push(...tabularToRecords(arr, name));
-      });
-      if(!rows.length) throw new Error('取り込める行が見つかりません。');
-      const r = await api({ action:'import_history', rows, skipDuplicates:true });
-      const backupText = r.backupName ? `自動バックアップ：${escapeHtml(r.backupName)}` : '自動バックアップ：作成なし';
-      const warningText = r.backupWarning ? `<br><span class="text-amber-700">${escapeHtml(r.backupWarning)}</span>` : '';
-      const errorText = r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : '';
-      showImportResult(`${backupText}${warningText}<br>取込完了：${r.imported}件／重複・不備で除外：${r.skipped}件${errorText}`);
-      toast(r.imported > 0 ? `${r.imported}件を取り込みました。履歴を更新します。` : '新規取込は0件でした。重複または入力形式を確認してください。', r.imported === 0);
-      switchTab('history');
-    } catch(e) { toast(e.message, true); }
-  });
-
-  $('importSheetButton').onclick = () => withButton($('importSheetButton'), '取込中...', async () => {
-    try {
-      const url = $('importSheetUrl').value.trim();
-      if(!url) throw new Error('過去のGoogleスプレッドシートURLを入力してください。');
-      const r = await api({ action:'import_spreadsheet', spreadsheetUrl:url });
-      const backupText = r.backupName ? `自動バックアップ：${escapeHtml(r.backupName)}` : '自動バックアップ：作成なし';
-      const warningText = r.backupWarning ? `<br><span class="text-amber-700">${escapeHtml(r.backupWarning)}</span>` : '';
-      const sheetsText = Array.isArray(r.sourceSheets) && r.sourceSheets.length ? `<br>対象シート：${r.sourceSheets.map(escapeHtml).join('、')}` : '';
-      const errorText = r.errors?.length ? '<br>' + r.errors.map(escapeHtml).join('<br>') : '';
-      showImportResult(`${backupText}${warningText}<br>${escapeHtml(r.sourceName || '過去シート')}から ${r.imported}件取込、${r.skipped}件除外しました。${sheetsText}${errorText}`);
-      toast(r.imported > 0 ? `${r.imported}件を取り込みました。履歴を更新します。` : '新規取込は0件でした。すべて重複か、取込対象外です。', r.imported === 0);
-      switchTab('history');
-    } catch(e) { toast(e.message, true); }
-  });
-
-  function showImportResult(html){ $('importResult').innerHTML = html; $('importResult').classList.remove('hidden'); }
-  function normalizeHeader(v){ return String(v || '').trim().replace(/[\s　]/g, ''); }
-  function guessType(value, sheet){
-    const s = String(value || '') + ' ' + String(sheet || '');
-    if(/医療/.test(s)) return '医療費';
-    if(/固定/.test(s)) return '固定支払';
-    if(/収入|売上|入金/.test(s)) return '収入';
-    if(/書類/.test(s)) return '書類';
-    return '領収書';
-  }
-  function tabularToRecords(values, sheetName){
-    if(!values.length) return [];
-    const headers = values[0].map(normalizeHeader);
-    const headerWords = ['日付','取引日','支払日','date','金額','合計','支払金額','収入金額','amount','店舗','店舗・支払先','支払先','収入元','カテゴリ','category'];
-    const hasHeader = headers.some(x => headerWords.includes(x));
-    const out = [];
-    for(let i = hasHeader ? 1 : 0; i < values.length; i++){
-      const r = values[i];
-      if(r.every(x => String(x).trim() === '')) continue;
-      if(hasHeader){
-        const o = {};
-        headers.forEach((h,j) => o[h] = r[j]);
-        out.push(mapImportObject(o, sheetName));
-      } else {
-        out.push({ timestamp:r[0], date:r[1], type:guessType(r[2], sheetName), patientName:/医療/.test(sheetName) ? r[2] : '', store:r[3], amount:r[4], category:r[5], items:r[6], recordId:r[7], purpose:r[8], sourceSheet:sheetName });
-      }
-    }
-    return out;
-  }
-  function mapImportObject(o, sheet){
-    const pick = (keys) => {
-      for(const k of keys){
-        const n = normalizeHeader(k);
-        if(o[n] !== undefined && String(o[n]).trim() !== '') return o[n];
-      }
-      return '';
-    };
-    const rawType = pick(['タイプ','種類','type']);
-    return {
-      timestamp:pick(['タイムスタンプ','登録日時','timestamp']),
-      date:pick(['日付','取引日','支払日','date']),
-      type:guessType(rawType, sheet),
-      patientName:pick(['患者名','氏名','patientName']),
-      store:pick(['店舗・支払先','店舗','支払先','名称','店名','収入元','store']),
-      amount:pick(['金額','合計','支払金額','収入金額','amount']),
-      category:pick(['カテゴリ','分類','category']),
-      items:pick(['内容','品目','詳細','摘要','items']),
-      purpose:pick(['用途・使途','用途','使途','目的','purpose']),
-      recordId:pick(['管理ID','ID','recordId']),
-      sourceSheet:sheet
-    };
-  }
-
-  $('manualDate').value = todayString();
-  $('fixedDate').value = todayString();
-  $('ocrDate').value = todayString();
-  $('gasUrl').value = store.get('yuzuGasUrl') || '';
-  $('gasToken').value = store.get('yuzuToken') || '';
-  $('toggleTokenButton').onclick = () => {
-    const show = $('gasToken').type === 'password';
-    $('gasToken').type = show ? 'text' : 'password';
-    $('toggleTokenButton').textContent = show ? '隠す' : '表示';
-    $('toggleTokenButton').setAttribute('aria-pressed', String(show));
-  };
-  renderFixedItems();
-  loadFixedItems();
-  updateManualType();
-  updateMode();
-  lucide.createIcons();
-
+  if(!result)throw Error('解析結果の受信がタイムアウトしました。電波状態やGASのデプロイ、APIキー設定をご確認ください。');
+  app.ai.result=result;
+  if(!app.draft)app.draft=supplementDraft();
+  if(result.name)app.draft.name=result.name;
+  app.draft.aiIngredients=result.ingredients||'';app.draft.aiServing=result.serving||'';app.draft.aiSummary=result.summary||'';app.draft.aiCautions=result.cautions||'';
+  for(const [field,target] of [['morning','morning'],['afternoon','afternoon'],['evening','evening']]){if(Number.isInteger(result.schedule?.[field]))app.draft[target]=result.schedule[field];}
+  alertMsg('写真を解析しました。サプリ名や服用目安を確認し、下の「サプリを登録」を押してください。','good');
+  void post;
+ }catch(err){app.ai.error=err.message||'解析できませんでした。GAS設定をご確認ください。';}
+ finally{app.ai.analyzing=false;render();}
+}
+function csvExport(){if(!app.loaded){alertMsg('まずGoogleから履歴を読み込んでください。','warn');return;}
+const rows=[['服用日','時間帯','サプリ名','数量（粒）']];Object.keys(app.logs).sort().forEach(date=>{TIMES.forEach(t=>{Object.entries(app.logs[date]?.[t.id]||{}).forEach(([id,n])=>{if(Number(n)>0){const name=app.supplements.find(s=>s.id===id)?.name||id;rows.push([date,t.name,name,n]);}});});});
+const csv='\uFEFF'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=u;a.download='SupplementHistory_'+todayDate()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),20000);alertMsg('CSVを保存しました。','good');}
+function shiftDay(d){const x=new Date(app.date+'T12:00:00');x.setDate(x.getDate()+d);app.date=[x.getFullYear(),String(x.getMonth()+1).padStart(2,'0'),String(x.getDate()).padStart(2,'0')].join('-');render();}
+document.addEventListener('submit',async e=>{if(e.target.id==='gas-form'){await saveGasUrl(e);}if(e.target.id==='supp-form'){await saveSupplement(e);}});
+document.addEventListener('change',e=>{if(e.target.id==='supp-photo'){choosePhoto(e.target.files?.[0]);return;}if(e.target.id==='record-date'&&/^\d{4}-\d\d-\d\d$/.test(e.target.value)){app.date=e.target.value;render();}});
+document.addEventListener('click',async e=>{
+const b=e.target.closest('[data-action], [data-tab]');if(!b)return;
+if(b.dataset.tab){app.tab=b.dataset.tab;render();return;}
+const a=b.dataset.action,id=b.dataset.id,t=b.dataset.timing;
+if(a==='today'){app.date=todayDate();app.tab='record';render();}
+if(a==='day-prev')shiftDay(-1);
+if(a==='day-next')shiftDay(1);
+if(a==='record')await recordDose(id,t,false);
+if(a==='cancel')await recordDose(id,t,true);
+if(a==='edit'){app.editing=id;app.draft=supplementDraft(app.supplements.find(s=>s.id===id));app.ai={dataUrl:'',previewName:'',analyzing:false,error:'',result:null};app.tab='manage';render();window.scrollTo({top:0,behavior:'smooth'});}
+if(a==='edit-cancel'){app.editing=null;app.draft=null;app.ai={dataUrl:'',previewName:'',analyzing:false,error:'',result:null};render();}
+if(a==='delete')await deleteSupplement(id);
+if(a==='analyze')await analyzePhoto();
+if(a==='refresh')await readState();
+if(a==='retry')await retryPending();
+if(a==='csv')csvExport();
+if(a==='jump'){app.date=b.dataset.date;app.tab='record';render();window.scrollTo({top:0,behavior:'smooth'});}
+});
+window.addEventListener('online',()=>{if(app.gasUrl&&!app.busy)readState(true);});
+try{app.pending=JSON.parse(safeStorageGet(PENDING_KEY)||'null');}catch(e){app.pending=null;}
+render();if(app.gasUrl)readState(true);else {app.tab='settings';alertMsg('最初にGASのURLを1回登録してください。','warn');render();}
 </script>
 </body>
 </html>
